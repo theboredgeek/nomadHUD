@@ -10,12 +10,12 @@ echo -e "${YELLOW}🚀 Starting nomadHUD installation on CachyOS...${NC}"
 
 # 1. Update system and install all tracked dependencies
 echo -e "${YELLOW}📦 Installing all dependencies...${NC}"
-sudo pacman -S --needed \
+ssudo pacman -S --needed \
     stow git hyprland kitty rofi swaync waypaper yazi dolphin \
     nm-connection-editor network-manager-applet \
     hyprpolkitagent xdg-desktop-portal-hyprland qt6-wayland \
-    brightnessctl pamixer \
-    quickshell qt6-declarative qt6-svg  # Added Quickshell dependencies
+    brightnessctl pamixer quickshell qt6-declarative qt6-svg \
+    mpv mesa
 
 # 2. Cleanup existing vanilla configs
 # This prevents Stow from failing or accidentally "adopting" the wrong files
