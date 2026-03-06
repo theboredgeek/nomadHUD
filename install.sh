@@ -8,24 +8,24 @@ NC='\033[0m' # No Color
 
 echo -e "${YELLOW}🚀 Starting nomadHUD installation on CachyOS...${NC}"
 
-# 1. Install Dependencies
+# 1. Update system and install all tracked dependencies
 echo -e "${YELLOW}📦 Installing all dependencies...${NC}"
 sudo pacman -S --needed \
     stow git hyprland kitty rofi swaync waypaper yazi dolphin \
     nm-connection-editor network-manager-applet \
     hyprpolkitagent xdg-desktop-portal-hyprland qt6-wayland \
-    brightnessctl pamixer
+    brightnessctl pamixer \
+    quickshell qt6-declarative qt6-svg  # Added Quickshell dependencies
 
 # 2. Cleanup existing vanilla configs
 # This prevents Stow from failing or accidentally "adopting" the wrong files
 echo -e "${YELLOW}🧹 Removing default/vanilla configs to prevent conflicts...${NC}"
-rm -rf ~/.config/hypr ~/.config/kitty ~/.config/rofi ~/.config/swaync ~/.config/waypaper ~/.config/yazi ~/.config/dolphinrc
+rm -rf ~/.config/hypr ~/.config/kitty ~/.config/rofi ~/.config/swaync ~/.config/waypaper ~/.config/yazi ~/.config/dolphinrc ~/.config/quickshell
 
 # 3. Ensure the parent directory exists
 mkdir -p "$HOME/.config"
 
 # 4. Use Stow to link
-# We removed --adopt. We are now "pushing" your GitHub files to the system.
 echo -e "${YELLOW}🔗 Linking nomadHUD with GNU Stow...${NC}"
 cd "$HOME/.dotfiles" || { echo -e "${RED}❌ Error: ~/.dotfiles directory not found!${NC}"; exit 1; }
 
