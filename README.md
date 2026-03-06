@@ -1,6 +1,8 @@
 This is a custom rice using the following:
 
-CachyOS
-Hyprland
+- OS: CachyOS
+- WM: Hyprland
+-Shell:  Kitty
+
 
 Managed with GNU Stow
