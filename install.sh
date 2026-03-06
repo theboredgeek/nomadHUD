@@ -9,23 +9,22 @@ NC='\033[0m' # No Color
 echo -e "${YELLOW}🚀 Starting nomadHUD installation on CachyOS...${NC}"
 
 # 1. Directory Check
-# Ensures the script is being run from the actual repo location
 if [[ "$PWD" != "$HOME/.dotfiles/nomadHUD" ]]; then
     echo -e "${RED}❌ Error: Please run this script from ~/.dotfiles/nomadHUD${NC}"
     exit 1
 fi
 
 # 2. Update system and install all tracked dependencies
+# Added 'jq' to handle Hyprland window counting safely
 echo -e "${YELLOW}📦 Installing all dependencies...${NC}"
 sudo pacman -S --needed \
     stow git hyprland kitty rofi swaync waypaper yazi dolphin \
     nm-connection-editor network-manager-applet \
     hyprpolkitagent xdg-desktop-portal-hyprland qt6-wayland \
     brightnessctl pamixer quickshell qt6-declarative qt6-svg \
-    mpv mesa
+    mpv mesa jq
 
 # 3. Cleanup existing vanilla configs
-# This prevents Stow from failing or accidentally "adopting" the wrong files
 echo -e "${YELLOW}🧹 Removing default/vanilla configs to prevent conflicts...${NC}"
 rm -rf ~/.config/hypr ~/.config/kitty ~/.config/rofi ~/.config/swaync \
        ~/.config/waypaper ~/.config/yazi ~/.config/dolphinrc ~/.config/quickshell
@@ -37,7 +36,6 @@ mkdir -p "$HOME/.config"
 echo -e "${YELLOW}🔗 Linking nomadHUD with GNU Stow...${NC}"
 cd "$HOME/.dotfiles" || { echo -e "${RED}❌ Error: ~/.dotfiles directory not found!${NC}"; exit 1; }
 
-# Stow nomadHUD package into the home directory
 stow -v nomadHUD
 
 # 6. Finalizing
