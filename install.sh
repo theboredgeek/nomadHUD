@@ -14,20 +14,29 @@ if [[ "$PWD" != "$HOME/.dotfiles/nomadHUD" ]]; then
     exit 1
 fi
 
-# 2. Update system and install all tracked dependencies
-# Added 'jq' to handle Hyprland window counting safely
-echo -e "${YELLOW}📦 Installing all dependencies...${NC}"
+# 2. Update system and install dependencies
+# We switch to quickshell-git to resolve SIGSEGV issues on CachyOS/Arch
+echo -e "${YELLOW}📦 Installing all dependencies (switching to quickshell-git)...${NC}"
+
+# Install standard packages first
 sudo pacman -S --needed \
     stow git hyprland kitty rofi swaync waypaper yazi dolphin \
     nm-connection-editor network-manager-applet \
     hyprpolkitagent xdg-desktop-portal-hyprland qt6-wayland \
-    brightnessctl pamixer quickshell qt6-declarative qt6-svg \
-    mpv mesa jq
+    brightnessctl pamixer qt6-declarative qt6-svg mpv mesa jq
 
-# 3. Cleanup existing vanilla configs
-echo -e "${YELLOW}🧹 Removing default/vanilla configs to prevent conflicts...${NC}"
+# Use yay to install/rebuild the git version of quickshell
+if command -v yay &> /dev/null; then
+    yay -S --needed quickshell-git
+else
+    echo -e "${RED}⚠️  yay not found. Please install quickshell-git manually.${NC}"
+fi
+
+# 3. Cleanup existing vanilla configs and Quickshell cache
+echo -e "${YELLOW}🧹 Cleaning up configs and engine cache...${NC}"
 rm -rf ~/.config/hypr ~/.config/kitty ~/.config/rofi ~/.config/swaync \
        ~/.config/waypaper ~/.config/yazi ~/.config/dolphinrc ~/.config/quickshell
+rm -rf ~/.cache/quickshell/*
 
 # 4. Ensure the parent config directory exists
 mkdir -p "$HOME/.config"
@@ -39,5 +48,5 @@ cd "$HOME/.dotfiles" || { echo -e "${RED}❌ Error: ~/.dotfiles directory not fo
 stow -v nomadHUD
 
 # 6. Finalizing
-echo -e "${GREEN}✅ nomadHUD is now linked!${NC}"
-echo -e "${YELLOW}👉 Restart Hyprland or run 'hyprctl reload' to activate the HUD.${NC}"
+echo -e "${GREEN}✅ nomadHUD is now linked and Quickshell-git is installed!${NC}"
+echo -e "${YELLOW}👉 Run 'quickshell -c ~/.config/quickshell' to test.${NC}"
