@@ -177,19 +177,36 @@ ShellRoot {
                     WlrLayershell.layer: WlrLayershell.Bottom
                     anchors { bottom: true; right: true }
                     implicitWidth: 500; implicitHeight: 140; color: "transparent"
+                    
                     Rectangle {
                         width: 380; height: 80; anchors.centerIn: parent
                         color: root.glass; border.color: root.amber; border.width: 1
+                        
                         Column {
                             anchors.centerIn: parent; spacing: 10
-                            Text { text: "MEM_POOL // " + root.memUsedGB + "GB"; font.family: "Monospace"; font.pixelSize: 12; color: root.amber }
+                            
+                            // Updated text to show Used / Total GB
+                            Text { 
+                                text: "MEM_POOL // " + root.memUsedGB + "GB / " + root.memTotalGB + "GB"; 
+                                font.family: "Monospace"; font.pixelSize: 12; color: root.amber 
+                            }
+                            
                             Rectangle {
                                 width: 300; height: 6; color: "#22E1B12C"
                                 Rectangle {
-                                    height: parent.height; width: parent.width * (parseInt(root.memLoad) / 100)
+                                    height: parent.height; 
+                                    // Progress bar correctly maps used percentage
+                                    width: parent.width * (parseInt(root.memLoad) / 100)
                                     color: root.amber
                                     Behavior on width { NumberAnimation { duration: 1500; easing.type: Easing.OutElastic } }
                                 }
+                            }
+            
+                            // Added a small percentage indicator for flavor
+                            Text {
+                                text: root.memLoad + "% CAPACITY_UTILIZED";
+                                font.family: "Monospace"; font.pixelSize: 8; color: root.amber; opacity: 0.6;
+                                anchors.horizontalCenter: parent.horizontalCenter
                             }
                         }
                     }
