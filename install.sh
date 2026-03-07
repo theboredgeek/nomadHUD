@@ -15,10 +15,9 @@ if [[ "$PWD" != "$HOME/.dotfiles/nomadHUD" ]]; then
 fi
 
 # 2. Update system and install dependencies
-# We switch to quickshell-git to resolve SIGSEGV issues on CachyOS/Arch
 echo -e "${YELLOW}📦 Installing all dependencies (switching to quickshell-git)...${NC}"
 
-# Install standard packages first
+# Ensure we have qt6-shadertools for the qsb compiler
 sudo pacman -S --needed \
     stow git hyprland kitty rofi swaync waypaper yazi dolphin \
     nm-connection-editor network-manager-applet \
@@ -47,6 +46,19 @@ cd "$HOME/.dotfiles" || { echo -e "${RED}❌ Error: ~/.dotfiles directory not fo
 
 stow -v nomadHUD
 
-# 6. Finalizing
+# 6. Compile DXMD Shaders (New Step for Qt6)
+echo -e "${YELLOW}✨ Compiling DXMD Shaders for Qt6...${NC}"
+QSB_BIN="/usr/lib/qt6/bin/qsb"
+FRAG_FILE="$HOME/.config/quickshell/shaders/hexgrid.frag"
+QSB_FILE="$HOME/.config/quickshell/shaders/hexgrid.qsb"
+
+if [ -f "$FRAG_FILE" ]; then
+    $QSB_BIN --glsl 440,100 --hlsl 61 --msl 20 -o "$QSB_FILE" "$FRAG_FILE"
+    echo -e "${GREEN}✅ Shader compiled successfully to .qsb${NC}"
+else
+    echo -e "${RED}❌ Error: hexgrid.frag not found in ~/.config/quickshell/shaders/${NC}"
+fi
+
+# 7. Finalizing
 echo -e "${GREEN}✅ nomadHUD is now linked and Quickshell-git is installed!${NC}"
 echo -e "${YELLOW}👉 Run 'quickshell -c ~/.config/quickshell' to test.${NC}"
