@@ -13,10 +13,13 @@ ShellRoot {
     // --- SYSTEM METRICS DATA ---
     property string cpuLoad: "00"
     property string memLoad: "00"
+    property string memUsedGB: "0.0"
+    property string memTotalGB: "0.0"
+    
     property real u_time: 0.0
     Timer { interval: 16; running: true; repeat: true; onTriggered: root.u_time += 0.01 }
 
-    // --- 1. CPU MONITOR (Top/Stat parser) ---
+    // --- 1. CPU MONITOR ---
     Process {
         id: cpuProc
         command: ["/bin/sh", "-c", "top -bn1 | grep 'Cpu(s)' | sed 's/.*, *\\([0-9.]*\\)%* id.*/\\1/' | awk '{print 100 - $1}'"]
@@ -29,20 +32,23 @@ ShellRoot {
         }
     }
 
-    // --- 2. MEMORY MONITOR (Free parser) ---
+    // --- 2. MEMORY MONITOR (Returns: % | UsedGB | TotalGB) ---
     Process {
         id: memProc
-        command: ["/bin/sh", "-c", "free | grep Mem | awk '{print $3/$2 * 100}'"]
+        command: ["/bin/sh", "-c", "awk '/MemTotal/ {t=$2} /MemAvailable/ {a=$2} END {u=t-a; printf \"%.0f|%.1f|%.1f\", (u/t*100), u/1024/1024, t/1024/1024}' /proc/meminfo"]
         stdout: SplitParser {
             onRead: data => { 
-                let val = parseFloat(data.trim()).toFixed(0);
-                root.memLoad = val.padStart(2, '0');
+                let parts = data.trim().split('|');
+                if (parts.length === 3) {
+                    root.memLoad = parts[0].padStart(2, '0');
+                    root.memUsedGB = parts[1];
+                    root.memTotalGB = parts[2];
+                }
                 memProc.running = false;
             }
         }
     }
 
-    // Update hardware every 2 seconds
     Timer {
         interval: 2000; running: true; repeat: true;
         onTriggered: {
@@ -51,7 +57,7 @@ ShellRoot {
         }
     }
 
-    // --- 0. BACKGROUND LAYER (The Animated Wallpaper) ---
+    // --- 0. BACKGROUND LAYER ---
     PanelWindow {
         WlrLayershell.layer: WlrLayershell.Background
         anchors { top: true; bottom: true; left: true; right: true }
@@ -91,35 +97,86 @@ ShellRoot {
         }
     }
 
-    // --- 2. TOP-LEFT DIAGNOSTIC (Clock + State) ---
+    // --- 2. TOP-LEFT DIAGNOSTIC (CPU + Animated Bar) ---
     PanelWindow {
         WlrLayershell.layer: WlrLayershell.Bottom
         anchors { top: true; left: true }
-        width: 400; height: 150; color: "transparent"
+        width: 450; height: 180; color: "transparent"
+        
         Item {
             anchors.fill: parent; anchors.margins: 40
-            Rectangle { width: 2; height: 60; color: root.amber; anchors.left: parent.left; anchors.top: parent.top }
-            Rectangle { width: 60; height: 2; color: root.amber; anchors.left: parent.left; anchors.top: parent.top }
-            Text {
-                text: "NOMAD_OS // CPU: " + root.cpuLoad + "%"
-                font.family: "Monospace"; font.pixelSize: 14; color: root.amber
-                anchors.left: parent.left; anchors.top: parent.top; anchors.leftMargin: 15; anchors.topMargin: 15
+            
+            // Corner L-Bracket
+            Rectangle { width: 2; height: 80; color: root.amber; anchors.left: parent.left; anchors.top: parent.top }
+            Rectangle { width: 80; height: 2; color: root.amber; anchors.left: parent.left; anchors.top: parent.top }
+
+            Column {
+                x: 15; y: 15
+                spacing: 6
+                
+                Text {
+                    text: "NOMAD_OS // CPU_LOAD: " + root.cpuLoad + "%"
+                    font.family: "Monospace"; font.pixelSize: 14; color: root.amber
+                }
+
+                // CPU Progress Bar
+                Rectangle {
+                    width: 200; height: 4; color: "#22E1B12C"
+                    Rectangle {
+                        height: parent.height
+                        width: parent.width * (parseInt(root.cpuLoad) / 100)
+                        color: root.amber
+                        Behavior on width { NumberAnimation { duration: 800; easing.type: Easing.OutQuint } }
+                    }
+                }
+                
+                Text {
+                    text: "STATUS: STABLE"
+                    font.family: "Monospace"; font.pixelSize: 10; color: root.amber; opacity: 0.6
+                }
             }
         }
     }
 
-    // --- 3. BOTTOM-RIGHT STATUS (Memory + Node) ---
+    // --- 3. BOTTOM-RIGHT STATUS (Memory + Visual GB Metrics) ---
     PanelWindow {
         WlrLayershell.layer: WlrLayershell.Bottom
         anchors { bottom: true; right: true }
-        width: 400; height: 100; color: "transparent"
+        width: 500; height: 140; color: "transparent"
+        
         Rectangle {
-            width: 320; height: 50; anchors.centerIn: parent
+            width: 380; height: 80; anchors.centerIn: parent
             color: root.glass; border.color: root.amber; border.width: 1
-            Text {
+            
+            Column {
                 anchors.centerIn: parent
-                text: "MEM_USED // " + root.memLoad + "% // NODE_" + screen.name.toUpperCase()
-                font.family: "Monospace"; font.bold: true; font.pixelSize: 12; color: root.amber
+                spacing: 10
+                
+                // Detailed GB readout
+                Text {
+                    text: "MEM_POOL // " + root.memUsedGB + "GB / " + root.memTotalGB + "GB"
+                    font.family: "Monospace"; font.bold: true; font.pixelSize: 12; color: root.amber
+                    anchors.horizontalCenter: parent.horizontalCenter
+                }
+                
+                // Visual Progress Bar
+                Rectangle {
+                    width: 300; height: 6; color: "#22E1B12C"
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    
+                    Rectangle {
+                        height: parent.height
+                        width: parent.width * (parseInt(root.memLoad) / 100)
+                        color: root.amber
+                        Behavior on width { NumberAnimation { duration: 1500; easing.type: Easing.OutElastic } }
+                    }
+                }
+
+                Text {
+                    text: "USAGE_INDEX: " + root.memLoad + "%"
+                    font.family: "Monospace"; font.pixelSize: 10; color: root.amber; opacity: 0.7
+                    anchors.horizontalCenter: parent.horizontalCenter
+                }
             }
         }
     }
