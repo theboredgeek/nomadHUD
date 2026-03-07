@@ -5,9 +5,33 @@ import Quickshell.Io
 
 ShellRoot {
     id: root
-    property bool isMultiTasking: false 
+    
+    // 1. DATA TRACKING
+    // We use a simple Process to get the window count
+    property int windowCount: 0
+    readonly property bool isMultiTasking: windowCount >= 2
 
-    // THE TIMER (Internal pulse for the shaders)
+    Process {
+        id: hyprWatcher
+        command: ["/bin/sh", "-c", "hyprctl activeworkspace -j | jq '.windows'"]
+        
+        // In 0.2.x, we connect to the stdout signal like this:
+        stdout: [
+            SplitParser {
+                onRead: data => {
+                    let count = parseInt(data.trim());
+                    if (!isNaN(count)) root.windowCount = count;
+                }
+            }
+        ]
+    }
+
+    Timer {
+        interval: 500; running: true; repeat: true; 
+        onTriggered: hyprWatcher.run()
+    }
+
+    // 2. VISUAL TIMER
     property real u_time: 0.0
     Timer { 
         interval: 16; running: true; repeat: true; 
@@ -72,12 +96,6 @@ ShellRoot {
 
             Behavior on y { NumberAnimation { duration: 600; easing.type: Easing.OutQuint } }
             Behavior on width { NumberAnimation { duration: 600; easing.type: Easing.OutQuint } }
-        }
-
-        // KEEP THE CLICKER FOR NOW (To confirm visuals work)
-        MouseArea {
-            anchors.fill: parent
-            onClicked: root.isMultiTasking = !root.isMultiTasking
         }
     }
 }
