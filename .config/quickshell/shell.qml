@@ -119,6 +119,7 @@ ShellRoot {
                 NetworkModule { targetScreen: screenScope.targetScreen; root: mainShell.config }
                 MemoryModule  { targetScreen: screenScope.targetScreen; root: mainShell.config }
                 GpuModule     { targetScreen: screenScope.targetScreen; root: mainShell.config }
+                ClockModule   { targetScreen: screenScope.targetScreen; root: mainShell.config }
             }
         }
     }
