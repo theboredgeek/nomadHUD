@@ -23,7 +23,7 @@ sudo pacman -S --needed \
     stow git hyprland kitty rofi swaync waypaper yazi dolphin \
     nm-connection-editor network-manager-applet \
     hyprpolkitagent xdg-desktop-portal-hyprland qt6-wayland \
-    brightnessctl pamixer qt6-declarative qt6-svg mpv mesa jq
+    brightnessctl pamixer qt6-declarative qt6-svg qt6-shadertools mpv mesa jq
 
 # Use yay to install/rebuild the git version of quickshell
 if command -v yay &> /dev/null; then
