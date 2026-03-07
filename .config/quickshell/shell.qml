@@ -10,6 +10,7 @@ ShellRoot {
     readonly property color glass: "#E6000000"
     readonly property color circuitBlue: "#004466"
     
+    // --- SYSTEM METRICS DATA ---
     property string cpuLoad: "00"
     property string memLoad: "00"
     property string memUsedGB: "0.0"
@@ -18,6 +19,7 @@ ShellRoot {
 
     Timer { interval: 16; running: true; repeat: true; onTriggered: root.u_time += 0.01 }
 
+    // --- METRIC PROCESSES ---
     Process {
         id: cpuProc
         command: ["/bin/sh", "-c", "top -bn1 | grep 'Cpu(s)' | awk '{print 100 - $8}'"]
@@ -44,12 +46,11 @@ ShellRoot {
     Variants {
         model: Quickshell.screens
         delegate: Component {
-            // THE FIX: Define the required property so Quickshell 0.2.1 knows where to map data
             Item {
                 required property var modelData
                 readonly property var targetScreen: modelData
 
-                // 0. BACKGROUND
+                // --- 0. BACKGROUND LAYER ---
                 PanelWindow {
                     screen: targetScreen
                     WlrLayershell.layer: WlrLayershell.Background
@@ -57,6 +58,8 @@ ShellRoot {
                     
                     Rectangle {
                         anchors.fill: parent; color: "#080808"
+                        
+                        // Animated Gradient Glow
                         Rectangle {
                             anchors.fill: parent; opacity: 0.15 + (Math.sin(root.u_time) * 0.05)
                             gradient: Gradient {
@@ -64,6 +67,8 @@ ShellRoot {
                                 GradientStop { position: 1.0; color: root.circuitBlue }
                             }
                         }
+
+                        // Animated Grid Lines
                         Repeater {
                             model: 8
                             Rectangle {
@@ -74,7 +79,7 @@ ShellRoot {
                     }
                 }
 
-                // 1. CENTRAL GRID
+                // --- 1. CENTRAL UNDERLAY (Pure QML Glass) ---
                 PanelWindow {
                     screen: targetScreen
                     WlrLayershell.layer: WlrLayershell.Bottom
@@ -82,21 +87,16 @@ ShellRoot {
                     color: "transparent"
                     
                     Rectangle {
-                        // Using targetScreen.width instead of global 'screen'
                         width: Math.floor(targetScreen.width * 0.6)
                         height: Math.floor(targetScreen.height * 0.5)
                         anchors.centerIn: parent
                         color: root.glass; border.color: root.amber; border.width: 1; opacity: 0.2
                         
-                        ShaderEffect {
-                            anchors.fill: parent; anchors.margins: 2
-                            property real u_time: root.u_time
-                            fragmentShader: "shaders/hexgrid.qsb"
-                        }
+                        // ShaderEffect REMOVED - Using simple QML border/opacity for the "glass" look
                     }
                 }
 
-                // 2. TOP-LEFT CPU
+                // --- 2. TOP-LEFT DIAGNOSTIC ---
                 PanelWindow {
                     screen: targetScreen
                     WlrLayershell.layer: WlrLayershell.Bottom
@@ -122,7 +122,7 @@ ShellRoot {
                     }
                 }
 
-                // 3. BOTTOM-RIGHT MEM
+                // --- 3. BOTTOM-RIGHT STATUS ---
                 PanelWindow {
                     screen: targetScreen
                     WlrLayershell.layer: WlrLayershell.Bottom
