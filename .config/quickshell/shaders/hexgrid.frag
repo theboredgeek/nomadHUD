@@ -11,14 +11,20 @@ layout(std140, binding = 0) uniform buf {
 };
 
 void main() {
-    // Calculate UV from screen coordinates instead of qt_TexCoord0
-    vec2 uv = gl_FragCoord.xy / vec2(u_width, u_height);
+    // Coordinate scaling
+    vec2 uv = gl_FragCoord.xy;
+    float scale = 40.0;
     
-    // Scale for hex-grid
-    vec2 grid_uv = uv * vec2(u_width / 30.0, u_height / 30.0);
-    float grid = sin(grid_uv.x * 3.1415) * sin(grid_uv.y * 3.1415);
-    float line = step(0.9, grid);
+    // Create sharp lines instead of rounded dots
+    vec2 grid = abs(fract(uv / scale - 0.5) - 0.5) / (fwidth(uv / scale));
+    float line = min(grid.x, grid.y);
+    float color_mask = 1.0 - smoothstep(0.0, 1.5, line);
     
+    // Amber/Gold DXMD color
     vec3 amber = vec3(0.88, 0.69, 0.17);
-    fragColor = vec4(amber * line * 0.5, 0.2 * qt_Opacity);
+    
+    // Add a very subtle "scanline" pulse using u_time
+    float pulse = 0.8 + 0.2 * sin(u_time * 2.0);
+    
+    fragColor = vec4(amber * color_mask * pulse, 0.2 * qt_Opacity);
 }
