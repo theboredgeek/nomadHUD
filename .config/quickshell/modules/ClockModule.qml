@@ -26,7 +26,7 @@ PanelWindow {
         Column {
             // Position the clock 220px down from the top edge
             anchors.top: parent.top
-            anchors.topMargin: 220 
+            anchors.topMargin: 40 
             anchors.right: parent.right
             anchors.rightMargin: 40
             spacing: 2
