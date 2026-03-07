@@ -1,163 +1,102 @@
 import QtQuick
 import Quickshell
 import Quickshell.Wayland
-import Quickshell.Io
 
 ShellRoot {
     id: root
     
-    // --- SHARED LOGIC ---
-    property int windowCount: 0
-    readonly property bool isMultiTasking: windowCount >= 2
+    readonly property color amber: "#E1B12C"
+    readonly property color glass: "#E6000000"
+    
     property real u_time: 0.0
-    Timer { interval: 16; running: true; repeat: true; onTriggered: root.u_time += 0.01 }
-
-    // --- LIVE CLOCK LOGIC ---
-    property string currentTime: "00:00:00"
-    Timer {
-        interval: 1000; running: true; repeat: true;
-        onTriggered: root.currentTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+    Timer { 
+        interval: 16; running: true; repeat: true; 
+        onTriggered: root.u_time += 0.01 
     }
 
-    // --- STABLE WINDOW TRACKER ---
-    Process {
-        id: hyprWatcher
-        running: true 
-        command: ["/bin/sh", "-c", "hyprctl activeworkspace -j | jq '.windows'"]
-        stdout: SplitParser {
-            onRead: data => {
-                let count = parseInt(data.trim());
-                if (!isNaN(count)) root.windowCount = count;
-                hyprWatcher.running = false;
-            }
-        }
-    }
-    Timer {
-        interval: 500; running: true; repeat: true; 
-        onTriggered: if (!hyprWatcher.running) hyprWatcher.running = true;
-    }
-
-    // --- 1. TOP BAR (152px GAP) ---
+    // --- 1. THE CENTRAL MATRIX ---
     PanelWindow {
-        WlrLayershell.namespace: "nomadTop"
-        WlrLayershell.layer: WlrLayershell.Top
-        WlrLayershell.exclusiveZone: isMultiTasking ? 45 : 0 
-        WlrLayershell.keyboardFocus: WlrLayershell.None
+        WlrLayershell.layer: WlrLayershell.Bottom
+        WlrLayershell.exclusiveZone: 0
         
-        anchors { top: true; left: true; right: true }
-        height: isMultiTasking ? 45 : 152 
+        // Correct way to fill the screen
+        anchors { 
+            top: true; bottom: true; left: true; right: true 
+        }
         color: "transparent"
 
         Rectangle {
-            width: root.isMultiTasking ? parent.width - 100 : 400
-            height: root.isMultiTasking ? 40 : 60 // Shrunk for 1080p fit
-            x: root.isMultiTasking ? 50 : (parent.width / 2 - width / 2)
-            y: root.isMultiTasking ? 2 : (parent.height - height - 5) // Clings 5px above
+            width: Math.floor(screen.width * 0.6)
+            height: Math.floor(screen.height * 0.5)
+            anchors.centerIn: parent
+            color: root.glass
+            border.color: root.amber
+            border.width: 1
+            opacity: 0.2
 
-            color: "#E6000000"; border.color: "#E1B12C"; border.width: 2
             ShaderEffect {
                 anchors.fill: parent; anchors.margins: 2
-                property real u_width: parent.width; property real u_height: parent.height; property real u_time: root.u_time
+                property real u_time: root.u_time
+                property real u_width: width
+                property real u_height: height
                 fragmentShader: "shaders/hexgrid.qsb"
             }
-            Text { anchors.centerIn: parent; text: "SYS // " + root.currentTime; color: "#E1B12C"; font.bold: true; font.pixelSize: root.isMultiTasking ? 14 : 18 }
-
-            Behavior on x { NumberAnimation { duration: 600; easing.type: Easing.OutQuint } }
-            Behavior on y { NumberAnimation { duration: 600; easing.type: Easing.OutQuint } }
-            Behavior on width { NumberAnimation { duration: 600; easing.type: Easing.OutQuint } }
         }
     }
 
-    // --- 2. BOTTOM BAR (52px GAP REMAINING) ---
+    // --- 2. TOP-LEFT DIAGNOSTIC ---
     PanelWindow {
-        WlrLayershell.namespace: "nomadBottom"
-        WlrLayershell.layer: WlrLayershell.Top
-        WlrLayershell.exclusiveZone: isMultiTasking ? 45 : 0
-        WlrLayershell.keyboardFocus: WlrLayershell.None
-        
-        anchors { bottom: true; left: true; right: true }
-        height: isMultiTasking ? 45 : 52 // EXACT space left after 152+876
+        WlrLayershell.layer: WlrLayershell.Bottom
+        anchors { top: true; left: true }
+        width: 400; height: 150
         color: "transparent"
 
-        Rectangle {
-            width: root.isMultiTasking ? parent.width - 100 : 400
-            height: root.isMultiTasking ? 40 : 48 // Must be < 52 to be seen
-            x: root.isMultiTasking ? 50 : (parent.width / 2 - width / 2)
-            y: root.isMultiTasking ? (parent.height - height - 2) : 2 // Clings 2px below window
+        Item {
+            anchors.fill: parent
+            anchors.margins: 40
 
-            color: "#E6000000"; border.color: "#E1B12C"; border.width: 2
-            ShaderEffect {
-                anchors.fill: parent; anchors.margins: 2
-                property real u_width: parent.width; property real u_height: parent.height; property real u_time: root.u_time
-                fragmentShader: "shaders/hexgrid.qsb"
+            // The "L" Bracket
+            Rectangle { 
+                width: 2; height: 60; color: root.amber
+                anchors.left: parent.left; anchors.top: parent.top
             }
-            Text { anchors.centerIn: parent; text: "TASK // INTERFACE"; color: "#E1B12C"; font.bold: true; font.pixelSize: root.isMultiTasking ? 14 : 16 }
+            Rectangle { 
+                width: 60; height: 2; color: root.amber
+                anchors.left: parent.left; anchors.top: parent.top
+            }
 
-            Behavior on x { NumberAnimation { duration: 600; easing.type: Easing.OutQuint } }
-            Behavior on y { NumberAnimation { duration: 600; easing.type: Easing.OutQuint } }
-            Behavior on width { NumberAnimation { duration: 600; easing.type: Easing.OutQuint } }
+            Text {
+                text: "NOMAD_OS // UNDERLAY_ACTIVE"
+                font.family: "Monospace"; font.pixelSize: 14
+                color: root.amber
+                anchors.left: parent.left
+                anchors.top: parent.top
+                anchors.leftMargin: 15
+                anchors.topMargin: 15
+            }
         }
     }
 
-    // --- 3. LEFT BAR (302px GAP) ---
+    // --- 3. BOTTOM-RIGHT STATUS ---
     PanelWindow {
-        WlrLayershell.namespace: "nomadLeft"
-        WlrLayershell.layer: WlrLayershell.Top
-        WlrLayershell.exclusiveZone: isMultiTasking ? 45 : 0
-        WlrLayershell.keyboardFocus: WlrLayershell.None
-        
-        anchors { left: true; top: true; bottom: true }
-        width: isMultiTasking ? 45 : 302 
+        WlrLayershell.layer: WlrLayershell.Bottom
+        anchors { bottom: true; right: true }
+        width: 400; height: 100
         color: "transparent"
 
         Rectangle {
-            width: root.isMultiTasking ? 40 : 60
-            height: root.isMultiTasking ? parent.height - 100 : 300
-            x: root.isMultiTasking ? 2 : (parent.width - width - 5) // Clings 5px left
-            y: root.isMultiTasking ? 50 : (parent.height / 2 - height / 2)
-
-            color: "#E6000000"; border.color: "#E1B12C"; border.width: 2
-            ShaderEffect {
-                anchors.fill: parent; anchors.margins: 2
-                property real u_width: parent.width; property real u_height: parent.height; property real u_time: root.u_time
-                fragmentShader: "shaders/hexgrid.qsb"
+            width: 300; height: 40
+            anchors.centerIn: parent
+            color: root.glass
+            border.color: root.amber
+            border.width: 1
+            
+            Text {
+                anchors.centerIn: parent
+                text: "NODE // " + screen.name.toUpperCase()
+                font.family: "Monospace"; font.bold: true
+                font.pixelSize: 12; color: root.amber
             }
-            Text { anchors.centerIn: parent; text: "AUD"; color: "#E1B12C"; font.bold: true; rotation: -90 }
-
-            Behavior on x { NumberAnimation { duration: 600; easing.type: Easing.OutQuint } }
-            Behavior on y { NumberAnimation { duration: 600; easing.type: Easing.OutQuint } }
-            Behavior on height { NumberAnimation { duration: 600; easing.type: Easing.OutQuint } }
-        }
-    }
-
-    // --- 4. RIGHT BAR (302px GAP) ---
-    PanelWindow {
-        WlrLayershell.namespace: "nomadRight"
-        WlrLayershell.layer: WlrLayershell.Top
-        WlrLayershell.exclusiveZone: isMultiTasking ? 45 : 0
-        WlrLayershell.keyboardFocus: WlrLayershell.None
-        
-        anchors { right: true; top: true; bottom: true }
-        width: isMultiTasking ? 45 : 302 // Matches left side gap for symmetry
-        color: "transparent"
-
-        Rectangle {
-            width: root.isMultiTasking ? 40 : 60
-            height: root.isMultiTasking ? parent.height - 100 : 300
-            x: root.isMultiTasking ? (parent.width - width - 2) : 5 // Clings 5px right
-            y: root.isMultiTasking ? 50 : (parent.height / 2 - height / 2)
-
-            color: "#E6000000"; border.color: "#E1B12C"; border.width: 2
-            ShaderEffect {
-                anchors.fill: parent; anchors.margins: 2
-                property real u_width: parent.width; property real u_height: parent.height; property real u_time: root.u_time
-                fragmentShader: "shaders/hexgrid.qsb"
-            }
-            Text { anchors.centerIn: parent; text: "HW"; color: "#E1B12C"; font.bold: true; rotation: 90 }
-
-            Behavior on x { NumberAnimation { duration: 600; easing.type: Easing.OutQuint } }
-            Behavior on y { NumberAnimation { duration: 600; easing.type: Easing.OutQuint } }
-            Behavior on height { NumberAnimation { duration: 600; easing.type: Easing.OutQuint } }
         }
     }
 }
