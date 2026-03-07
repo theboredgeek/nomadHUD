@@ -33,15 +33,12 @@ ShellRoot {
             ShaderEffect {
                 anchors.fill: parent
                 anchors.margins: 2
-                
                 property real u_width: parent.width
                 property real u_height: parent.height
                 property real u_time: mainPanel.u_time
 
-                // In Quickshell 0.2.x, the 'Shader' type is often actually 
-                // just 'fragmentShader: "shaders/hexgrid.frag"' 
-                // but it MUST be absolute or resolved via Qt.resolvedUrl
-                fragmentShader: Qt.resolvedUrl("shaders/hexgrid.frag")
+                // FIX: Point to the compiled binary instead of the text file
+                fragmentShader: "shaders/hexgrid.qsb"
             }
 
             Text {
