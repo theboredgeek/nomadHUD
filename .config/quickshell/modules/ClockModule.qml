@@ -9,22 +9,18 @@ PanelWindow {
 
     screen: targetScreen
     WlrLayershell.layer: WlrLayershell.Bottom
-    
-    // Use boolean anchors for edges
     anchors { top: true; right: true }
     
-    // Instead of topMargin, we define the height to include the "gap" 
-    // or just rely on the internal Item to position itself.
     implicitWidth: 300
-    implicitHeight: 350 // Increased to accommodate the vertical offset
+    implicitHeight: 350
     color: "transparent"
 
     Item {
+        id: clockContainer // Give this an ID
         anchors.fill: parent
         readonly property color theme: root ? root.amber : "#888888"
 
         Column {
-            // Position the clock 220px down from the top edge
             anchors.top: parent.top
             anchors.topMargin: 40 
             anchors.right: parent.right
@@ -37,19 +33,19 @@ PanelWindow {
                     return Qt.formatDateTime(new Date(), "hh:mm:ss");
                 }
                 font.family: "Monospace"; font.pixelSize: 32; font.bold: true
-                color: parent.parent.theme
+                color: clockContainer.theme // Direct ID reference
             }
 
             Text {
                 text: "// SYSTEM_SYNC_ACTIVE // " + Qt.formatDateTime(new Date(), "yyyy.MM.dd")
                 font.family: "Monospace"; font.pixelSize: 10
-                color: parent.parent.theme; opacity: 0.6
+                color: clockContainer.theme; opacity: 0.6
             }
 
             Rectangle {
-                width: 180; height: 1; color: parent.parent.theme
+                width: 180; height: 1; color: clockContainer.theme
                 Rectangle {
-                    width: 20; height: 3; color: parent.parent.theme
+                    width: 20; height: 3; color: clockContainer.theme // This line was causing the warning
                     x: (parent.width - 20) * (Math.sin(root ? root.u_time * 2 : 0) + 1) / 2
                 }
             }
