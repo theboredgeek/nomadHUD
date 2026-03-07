@@ -6,70 +6,45 @@ import Quickshell.Io
 ShellRoot {
     id: root
     
+    // --- SHARED LOGIC ---
     property int windowCount: 0
     readonly property bool isMultiTasking: windowCount >= 2
+    property real u_time: 0.0
+    Timer { interval: 16; running: true; repeat: true; onTriggered: root.u_time += 0.01 }
 
-    // 1. STABLE WINDOW TRACKER (Property-based)
+    // --- STABLE WINDOW TRACKER ---
     Process {
         id: hyprWatcher
-        // Start the process immediately
         running: true 
         command: ["/bin/sh", "-c", "hyprctl activeworkspace -j | jq '.windows'"]
-        
         stdout: SplitParser {
             onRead: data => {
                 let count = parseInt(data.trim());
                 if (!isNaN(count)) root.windowCount = count;
-                // Once data is read, stop the process so it can be restarted by the timer
                 hyprWatcher.running = false;
             }
         }
     }
-
-    // Refresh every 500ms by toggling the 'running' property
     Timer {
         interval: 500; running: true; repeat: true; 
         onTriggered: if (!hyprWatcher.running) hyprWatcher.running = true;
     }
 
-    // 2. SOUND FX TRIGGER (Property-based)
-    Process { 
-        id: soundProc
-        running: false
-        // Ensure it stops running after play so it can be re-triggered
-        onRunningChanged: if (!running) command = [] 
-    }
-
-    onIsMultiTaskingChanged: {
-        let sound = isMultiTasking ? "dx_data_slide.wav" : "dx_menu_open.wav";
-        soundProc.command = ["mpv", "--no-video", "/home/othei/.local/share/sounds/" + sound];
-        soundProc.running = true;
-    }
-
-    // 3. VISUAL PULSE
-    property real u_time: 0.0
-    Timer { 
-        interval: 16; running: true; repeat: true; 
-        onTriggered: root.u_time += 0.01 
-    }
-
+    // --- 1. TOP BAR WINDOW ---
     PanelWindow {
-        id: mainPanel
-        WlrLayershell.namespace: "nomadHUD"
+        WlrLayershell.namespace: "nomadTop"
         WlrLayershell.layer: WlrLayershell.Top
-        WlrLayershell.exclusiveZone: 40 
-        WlrLayershell.keyboardFocus: WlrLayershell.None
-
-        anchors { top: true; bottom: true; left: true; right: true }
+        WlrLayershell.exclusiveZone: isMultiTasking ? 45 : 0 // Only reserve space in Bar mode
+        
+        anchors { top: true; left: true; right: true }
+        height: isMultiTasking ? 45 : Screen.height // Expand to center for HUD
         color: "transparent"
 
-        // --- TOP SECTION ---
         Rectangle {
-            id: sysBar
             width: root.isMultiTasking ? parent.width - 80 : 450
             height: root.isMultiTasking ? 40 : 120
             x: root.isMultiTasking ? 40 : (parent.width / 2 - width / 2)
-            y: root.isMultiTasking ? 0 : (parent.height / 2 - 180)
+            y: root.isMultiTasking ? 2 : (parent.height / 2 - 180)
             color: "#E6000000"; border.color: "#E1B12C"; border.width: 2
             
             ShaderEffect {
@@ -78,7 +53,6 @@ ShellRoot {
                 property real u_time: root.u_time
                 fragmentShader: "shaders/hexgrid.qsb"
             }
-
             Text { anchors.centerIn: parent; text: "SYS // STATUS"; color: "#E1B12C"; font.bold: true }
 
             Behavior on x { NumberAnimation { duration: 600; easing.type: Easing.OutQuint } }
@@ -86,14 +60,24 @@ ShellRoot {
             Behavior on width { NumberAnimation { duration: 600; easing.type: Easing.OutQuint } }
             Behavior on height { NumberAnimation { duration: 600; easing.type: Easing.OutQuint } }
         }
+    }
 
-        // --- BOTTOM SECTION ---
+    // --- 2. BOTTOM BAR WINDOW ---
+    PanelWindow {
+        WlrLayershell.namespace: "nomadBottom"
+        WlrLayershell.layer: WlrLayershell.Top
+        WlrLayershell.exclusiveZone: isMultiTasking ? 45 : 0
+        
+        anchors { bottom: true; left: true; right: true }
+        height: isMultiTasking ? 45 : Screen.height
+        color: "transparent"
+
         Rectangle {
-            id: taskBar
             width: root.isMultiTasking ? parent.width - 80 : 450
             height: root.isMultiTasking ? 40 : 80
             x: root.isMultiTasking ? 40 : (parent.width / 2 - width / 2)
-            y: root.isMultiTasking ? (parent.height - height) : (parent.height / 2 + 100)
+            y: root.isMultiTasking ? 2 : (-(parent.height / 2) + 100) // Offset from bottom
+
             color: "#E6000000"; border.color: "#E1B12C"; border.width: 2
             
             ShaderEffect {
@@ -102,7 +86,6 @@ ShellRoot {
                 property real u_time: root.u_time
                 fragmentShader: "shaders/hexgrid.qsb"
             }
-
             Text { anchors.centerIn: parent; text: "TASK // INTERFACE"; color: "#E1B12C"; font.bold: true }
 
             Behavior on y { NumberAnimation { duration: 600; easing.type: Easing.OutQuint } }
