@@ -70,6 +70,28 @@ ShellRoot {
             if (!cpuProc.running) cpuProc.running = true; 
             if (!memProc.running) memProc.running = true;
             if (!netProc.running) netProc.running = true;
+            if (!gpuProc.running) gpuProc.running = true;
+        }
+    }
+
+    Process {
+        id: gpuProc
+        // This version looks for the device vendor and name, then checks for load.
+        // It uses a fallback to 0 if the busy_percent file doesn't exist.
+        command: ["/bin/sh", "-c", "for dev in /sys/class/drm/card[0-9]; do \
+            [ -e \"$dev/device/vendor\" ] || continue; \
+            VEND=$(cat \"$dev/device/vendor\"); \
+            NAME=$(echo \"$VEND\" | sed 's/0x1002/AMD/;s/0x10de/NVIDIA/;s/0x8086/INTEL/'); \
+            BUSY=\"$dev/device/gpu_busy_percent\"; \
+            LOAD=$( [ -f \"$BUSY\" ] && cat \"$BUSY\" || echo \"0\" ); \
+            printf \"$NAME|$LOAD \"; \
+        done"]
+        stdout: SplitParser {
+            onRead: data => {
+                let items = data.trim().split(' ').filter(i => i.length > 0);
+                mainShell.gpuData = items;
+                gpuProc.running = false;
+            }
         }
     }
 
@@ -120,6 +142,7 @@ ShellRoot {
                 MemoryModule  { targetScreen: screenScope.targetScreen; root: mainShell.config }
                 GpuModule     { targetScreen: screenScope.targetScreen; root: mainShell.config }
                 ClockModule   { targetScreen: screenScope.targetScreen; root: mainShell.config }
+                MonitorManager { targetScreen: screenScope.targetScreen; root: mainShell.config }
             }
         }
     }
