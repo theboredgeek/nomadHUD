@@ -14,19 +14,15 @@ PanelWindow {
     screen: targetScreen
     WlrLayershell.layer: WlrLayershell.Bottom
     WlrLayershell.namespace: "storage_module"
-    
-    // We remove the mask entirely. 
-    // The window will only be as large as the content.
     WlrLayershell.keyboardFocus: WlrLayershell.None
     
     anchors { bottom: true; right: true }
     
-    // The window size now tracks the box size exactly
     implicitWidth: storageMainBox.width
     implicitHeight: storageMainBox.height
 
-    property color accent: (root && root.accent !== undefined) ? root.accent : "#00ffff"
-    property string monoFont: (root && root.monoFont !== undefined) ? root.monoFont : "Monospace"
+    property color accent: (root && root.amber !== undefined) ? root.amber : "#e1a82c"
+    property string monoFont: (root && root.fontFamily !== undefined) ? root.fontFamily : "Monospace"
 
     Binding {
         target: storageWindow.WlrLayershell
@@ -47,12 +43,12 @@ PanelWindow {
             id: storageList
             anchors.fill: parent
             anchors.margins: 10
-            spacing: 10
+            spacing: 12
             interactive: false 
             model: ListModel { id: storageModel }
 
             delegate: Item {
-                width: 280; height: 60
+                width: 280; height: 75 // Increased height for the bar
                 
                 Rectangle {
                     anchors.fill: parent
@@ -67,31 +63,69 @@ PanelWindow {
                         acceptedButtons: Qt.NoButton
                     }
 
-                    RowLayout {
-                        anchors.fill: parent; anchors.margins: 10
-                        Column {
+                    ColumnLayout {
+                        anchors.fill: parent; anchors.margins: 8
+                        spacing: 4
+
+                        RowLayout {
                             Layout.fillWidth: true
-                            Text { 
-                                text: "STORAGE // " + (model.label ? model.label.toUpperCase() : "DRIVE")
-                                font.family: storageWindow.monoFont
-                                font.pixelSize: 10; color: (driveHover.containsMouse || mounted) ? storageWindow.accent : "#888" 
+                            Column {
+                                Layout.fillWidth: true
+                                Text { 
+                                    text: "STORAGE // " + (model.label ? model.label.toUpperCase() : "DRIVE")
+                                    font.family: storageWindow.monoFont
+                                    font.pixelSize: 10; color: (driveHover.containsMouse || mounted) ? storageWindow.accent : "#888" 
+                                }
+                                Text { 
+                                    text: (model.name || "dev") + " [" + (model.size || "--") + "]"
+                                    font.family: storageWindow.monoFont
+                                    font.pixelSize: 9; color: driveHover.containsMouse ? "#aaa" : "#555" 
+                                }
                             }
-                            Text { 
-                                text: (model.name || "dev") + " [" + (model.size || "--") + "]"
-                                font.family: storageWindow.monoFont
-                                font.pixelSize: 9; color: driveHover.containsMouse ? "#aaa" : "#555" 
-                            }
-                        }
-                        Row {
-                            spacing: 5
                             Button {
-                                width: 45; height: 26
+                                width: 45; height: 24
                                 text: mounted ? "UMNT" : "MNT"
                                 onClicked: {
                                     actionProc.command = mounted 
                                         ? ["udisksctl", "unmount", "-b", "/dev/" + name] 
                                         : ["udisksctl", "mount", "-b", "/dev/" + name];
                                     actionProc.running = true;
+                                }
+                            }
+                        }
+
+                        // CAPACITY BAR SECTION
+                        ColumnLayout {
+                            Layout.fillWidth: true
+                            visible: mounted
+                            spacing: 2
+
+                            // Metrics Text
+                            RowLayout {
+                                Layout.fillWidth: true
+                                Text {
+                                    text: model.avail + " FREE"
+                                    font.family: storageWindow.monoFont
+                                    font.pixelSize: 8; color: "#666"
+                                }
+                                Item { Layout.fillWidth: true }
+                                Text {
+                                    text: model.usePerc
+                                    font.family: storageWindow.monoFont
+                                    font.pixelSize: 8; color: storageWindow.accent
+                                }
+                            }
+
+                            // The Bar
+                            Rectangle {
+                                Layout.fillWidth: true
+                                height: 4
+                                color: "#222"
+                                Rectangle {
+                                    width: parent.width * (parseInt(model.usePerc) / 100)
+                                    height: parent.height
+                                    color: storageWindow.accent
+                                    opacity: 0.8
                                 }
                             }
                         }
@@ -102,9 +136,11 @@ PanelWindow {
     }
 
     Process { id: actionProc; onExited: lsblkProc.running = true }
+    
     Process {
         id: lsblkProc
-        command: ["lsblk", "-J", "-o", "NAME,SIZE,MOUNTPOINTS,FSTYPE,LABEL"]
+        // Added FSAVAIL and FSUSE% to the columns
+        command: ["lsblk", "-J", "-o", "NAME,SIZE,MOUNTPOINTS,FSTYPE,LABEL,FSAVAIL,FSUSE%"]
         running: true
         property string buffer: ""
         stdout: SplitParser { onRead: data => { lsblkProc.buffer += data; } }
@@ -121,8 +157,13 @@ PanelWindow {
                         if (Array.isArray(d.mountpoints)) { mnt = d.mountpoints.find(p => p !== null) || ""; }
                         if (d.fstype && d.fstype !== "swap" && !d.name.includes("loop")) {
                             storageModel.append({
-                                name: d.name, label: d.label || d.name,
-                                size: d.size, mounted: mnt !== "", path: mnt
+                                name: d.name, 
+                                label: d.label || d.name,
+                                size: d.size, 
+                                mounted: mnt !== "", 
+                                path: mnt,
+                                avail: d.fsavail || "0B",
+                                usePerc: d["fsuse%"] || "0%"
                             });
                         }
                         if (d.children) d.children.forEach(processDev);
