@@ -72,4 +72,13 @@ QtObject {
     function getBtnBg(isHovered) { return isHovered ? amber : bgDark; }
     function getBtnText(isHovered) { return isHovered ? bgDark : amber; }
     function getBtnBorder(isHovered) { return amber; }
+
+    // --- 11. TRIGGER BUTTON SPECIAL STYLES ---
+    readonly property int triggerSize: 70
+    readonly property int triggerRotation: 45
+    readonly property int triggerTextRotation: -45
+    readonly property real triggerOpacity: 0.9
+    
+    function getTriggerBg(isOpen) { return isOpen ? amber : bgDark; }
+    function getTriggerText(isOpen) { return isOpen ? bgDark : amber; }
 }

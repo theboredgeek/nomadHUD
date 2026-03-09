@@ -77,21 +77,28 @@ PanelWindow {
         Rectangle {
             id: hexTrigger
             Layout.alignment: Qt.AlignHCenter
-            width: 70; height: 70
-            color: layoutPopup.opened ? Theme.amber : Theme.bgDark
+            
+            // Size and Shape controlled by Theme
+            width: Theme.triggerSize
+            height: Theme.triggerSize
+            rotation: Theme.triggerRotation
+            
+            // Visuals controlled by Theme
+            color: Theme.getTriggerBg(layoutPopup.opened)
             border.color: Theme.amber
             border.width: Theme.borderWidth + 1
-            rotation: 45
-            opacity: 0.9
+            opacity: Theme.triggerOpacity
 
             Text {
                 anchors.centerIn: parent
-                text: "DISP"
-                color: layoutPopup.opened ? "black" : Theme.amber
+                text: "DISP" // The only local override
+                
+                // Typography and alignment controlled by Theme
+                color: Theme.getTriggerText(layoutPopup.opened)
                 font.family: Theme.fontFamily
                 font.pixelSize: Theme.fontSizeLarge
                 font.bold: true
-                rotation: -45 
+                rotation: Theme.triggerTextRotation 
             }
 
             MouseArea {
