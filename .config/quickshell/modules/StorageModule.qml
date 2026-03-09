@@ -21,8 +21,10 @@ PanelWindow {
     implicitWidth: storageMainBox.width
     implicitHeight: storageMainBox.height
 
-    property color accent: (root && root.amber !== undefined) ? root.amber : "#e1a82c"
-    property string monoFont: (root && root.fontFamily !== undefined) ? root.fontFamily : "Monospace"
+    // --- THEME LINKING ---
+    // Now pulling directly from shell.qml global properties
+    property color accent: root.amber
+    property string monoFont: root.fontFamily
 
     Binding {
         target: storageWindow.WlrLayershell
@@ -35,7 +37,7 @@ PanelWindow {
         id: storageMainBox
         width: 300
         height: Math.max(storageList.contentHeight + 20, 60)
-        color: (root && root.glass !== undefined) ? root.glass : "#E6000000"
+        color: root.glass
         border.color: "#333"
         border.width: 1
 
@@ -48,7 +50,7 @@ PanelWindow {
             model: ListModel { id: storageModel }
 
             delegate: Item {
-                width: 280; height: 75 // Increased height for the bar
+                width: 280; height: 75 
                 
                 Rectangle {
                     anchors.fill: parent
@@ -87,8 +89,8 @@ PanelWindow {
                                 text: mounted ? "UMNT" : "MNT"
                                 onClicked: {
                                     actionProc.command = mounted 
-                                        ? ["udisksctl", "unmount", "-b", "/dev/" + name] 
-                                        : ["udisksctl", "mount", "-b", "/dev/" + name];
+                                        ? ["udisksctl", "unmount", "-b", "/dev/" + model.name] 
+                                        : ["udisksctl", "mount", "-b", "/dev/" + model.name];
                                     actionProc.running = true;
                                 }
                             }
@@ -100,7 +102,6 @@ PanelWindow {
                             visible: mounted
                             spacing: 2
 
-                            // Metrics Text
                             RowLayout {
                                 Layout.fillWidth: true
                                 Text {
@@ -116,13 +117,13 @@ PanelWindow {
                                 }
                             }
 
-                            // The Bar
                             Rectangle {
                                 Layout.fillWidth: true
                                 height: 4
                                 color: "#222"
                                 Rectangle {
-                                    width: parent.width * (parseInt(model.usePerc) / 100)
+                                    // Robust percentage parsing
+                                    width: parent.width * (Math.min(100, parseInt(model.usePerc.replace('%',''))) / 100)
                                     height: parent.height
                                     color: storageWindow.accent
                                     opacity: 0.8
@@ -139,7 +140,6 @@ PanelWindow {
     
     Process {
         id: lsblkProc
-        // Added FSAVAIL and FSUSE% to the columns
         command: ["lsblk", "-J", "-o", "NAME,SIZE,MOUNTPOINTS,FSTYPE,LABEL,FSAVAIL,FSUSE%"]
         running: true
         property string buffer: ""
@@ -155,6 +155,7 @@ PanelWindow {
                     const processDev = (d) => {
                         let mnt = "";
                         if (Array.isArray(d.mountpoints)) { mnt = d.mountpoints.find(p => p !== null) || ""; }
+                        // Filter out non-storage partitions like swap or loops
                         if (d.fstype && d.fstype !== "swap" && !d.name.includes("loop")) {
                             storageModel.append({
                                 name: d.name, 
