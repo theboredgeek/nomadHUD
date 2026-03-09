@@ -83,31 +83,70 @@ PanelWindow {
                                 }
                             }
 
-                            // ACTION BUTTONS
+                            // --- CUSTOM THEMED BUTTONS ---
                             Row {
-                                spacing: 4
-                                Button {
-                                    width: 42; height: 24
-                                    text: mounted ? "UMNT" : "MNT"
-                                    onClicked: {
-                                        actionProc.command = mounted 
-                                            ? ["udisksctl", "unmount", "-b", "/dev/" + model.name] 
-                                            : ["udisksctl", "mount", "-b", "/dev/" + model.name];
-                                        actionProc.running = true;
+                                spacing: 6
+                                
+                                // Mount/Unmount Button
+                                Rectangle {
+                                    width: 48; height: 20
+                                    color: mntMouse.containsMouse ? storageWindow.accent : "transparent"
+                                    border.color: storageWindow.accent
+                                    border.width: 1
+                                    
+                                    Text {
+                                        anchors.centerIn: parent
+                                        text: mounted ? "UMNT" : "MNT"
+                                        font.family: storageWindow.monoFont
+                                        font.pixelSize: 8
+                                        font.bold: true
+                                        color: mntMouse.containsMouse ? "black" : storageWindow.accent
+                                    }
+
+                                    MouseArea {
+                                        id: mntMouse
+                                        anchors.fill: parent
+                                        hoverEnabled: true
+                                        onClicked: {
+                                            actionProc.command = mounted 
+                                                ? ["udisksctl", "unmount", "-b", "/dev/" + model.name] 
+                                                : ["udisksctl", "mount", "-b", "/dev/" + model.name];
+                                            actionProc.running = true;
+                                        }
                                     }
                                 }
-                                Button {
-                                    width: 42; height: 24
-                                    text: "VIEW"
+
+                                // View Button
+                                Rectangle {
+                                    width: 48; height: 20
                                     visible: mounted && model.path !== ""
-                                    onClicked: {
-                                        openProc.command = ["xdg-open", model.path];
-                                        openProc.running = true;
+                                    color: viewMouse.containsMouse ? storageWindow.accent : "transparent"
+                                    border.color: storageWindow.accent
+                                    border.width: 1
+                                    
+                                    Text {
+                                        anchors.centerIn: parent
+                                        text: "VIEW"
+                                        font.family: storageWindow.monoFont
+                                        font.pixelSize: 8
+                                        font.bold: true
+                                        color: viewMouse.containsMouse ? "black" : storageWindow.accent
+                                    }
+
+                                    MouseArea {
+                                        id: viewMouse
+                                        anchors.fill: parent
+                                        hoverEnabled: true
+                                        onClicked: {
+                                            openProc.command = ["xdg-open", model.path];
+                                            openProc.running = true;
+                                        }
                                     }
                                 }
                             }
                         }
 
+                        // CAPACITY BAR SECTION
                         ColumnLayout {
                             Layout.fillWidth: true
                             visible: mounted
@@ -147,7 +186,7 @@ PanelWindow {
     }
 
     Process { id: actionProc; onExited: lsblkProc.running = true }
-    Process { id: openProc } // New process for opening the file manager
+    Process { id: openProc }
     
     Process {
         id: lsblkProc
