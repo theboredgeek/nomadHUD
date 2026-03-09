@@ -21,14 +21,34 @@ PanelWindow {
     
     color: "transparent"
 
-    // --- THEME DATA BINDING ---
-    readonly property color accent: root ? root.amber : "#2c4de1"
-    readonly property string monoFont: root ? root.fontFamily : "Monospace"
-
     ListModel { id: monModel }
     property var rawResData: ({}) 
     property string activeMon: ""
     property bool hasChanges: false
+
+    // --- REUSABLE THEMED COMPONENTS ---
+    
+    component ThemedButton : Button {
+        id: control
+        font.family: Theme.fontFamily
+        font.pixelSize: Theme.fontSizeSmall
+        
+        contentItem: Text {
+            text: control.text
+            font: control.font
+            color: control.hovered ? Theme.bgDark : Theme.amber
+            horizontalAlignment: Text.AlignHCenter
+            verticalAlignment: Text.AlignVCenter
+        }
+
+        background: Rectangle {
+            implicitHeight: 30
+            color: control.down ? Theme.pressedTint : (control.hovered ? Theme.amber : "transparent")
+            border.color: Theme.amber
+            border.width: Theme.borderWidth
+            radius: Theme.cornerRadius
+        }
+    }
 
     function getHyprTransform(type) {
         const transforms = {
@@ -51,23 +71,26 @@ PanelWindow {
         anchors.top: parent.top
         anchors.horizontalCenter: parent.horizontalCenter
         width: 500
-        spacing: 10
+        spacing: Theme.moduleSpacing
 
+        // --- THE TRIGGER BUTTON ---
         Rectangle {
             id: hexTrigger
             Layout.alignment: Qt.AlignHCenter
             width: 70; height: 70
-            // Theme Reliance: root.amber
-            color: layoutPopup.opened ? monitorManager.accent : "#0d0d0d"
-            border.color: monitorManager.accent; border.width: 2
-            rotation: 45; opacity: 0.9
+            color: layoutPopup.opened ? Theme.amber : Theme.bgDark
+            border.color: Theme.amber
+            border.width: Theme.borderWidth + 1
+            rotation: 45
+            opacity: 0.9
 
             Text {
                 anchors.centerIn: parent
                 text: "DISP"
-                color: layoutPopup.opened ? "black" : monitorManager.accent
-                font.family: monitorManager.monoFont
-                font.pixelSize: 12; font.bold: true
+                color: layoutPopup.opened ? "black" : Theme.amber
+                font.family: Theme.fontFamily
+                font.pixelSize: Theme.fontSizeLarge
+                font.bold: true
                 rotation: -45 
             }
 
@@ -77,6 +100,7 @@ PanelWindow {
             }
         }
 
+        // --- POPUP INTERFACE ---
         Rectangle {
             id: layoutPopup
             property bool opened: false
@@ -85,24 +109,25 @@ PanelWindow {
             
             width: 500
             height: Math.min(monitorManager.screen.height * 0.8, 800)
-            color: "#050505"; border.color: monitorManager.accent; border.width: 1; opacity: 0.95
-
-            MouseArea {
-                anchors.fill: parent
-                onPressed: (mouse) => mouse.accepted = true
-            }
+            color: Theme.glass
+            border.color: Theme.amber
+            border.width: Theme.borderWidth
+            radius: Theme.cornerRadius
 
             ColumnLayout {
                 anchors.fill: parent; anchors.margins: 20; spacing: 15
 
                 Text { 
                     text: "TOPOLOGY_CALIBRATION_V34"
-                    color: monitorManager.accent; font.bold: true
-                    font.family: monitorManager.monoFont
+                    color: Theme.amber
+                    font.bold: true
+                    font.letterSpacing: Theme.fontLetterSpacing
+                    font.family: Theme.fontFamily
                 }
 
+                // Visual Topology Map
                 Rectangle {
-                    Layout.fillWidth: true; height: 200; color: "black"; border.color: "#222"; clip: true
+                    Layout.fillWidth: true; height: 200; color: Theme.bgDark; border.color: Theme.panelBorder; clip: true
                     
                     Repeater {
                         model: monModel
@@ -110,14 +135,14 @@ PanelWindow {
                             width: getLogicalWidth(index) / 40
                             height: getLogicalHeight(index) / 40
                             x: 50 + (model.x / 40); y: 40 + (model.y / 40)
-                            color: activeMon === name ? monitorManager.accent : "#1a1a1a"
+                            color: activeMon === name ? Theme.amber : Theme.glassLight
                             border.color: "white"; border.width: activeMon === name ? 2 : 1
                             
                             Text { 
                                 anchors.centerIn: parent
                                 color: activeMon === name ? "black" : "white"
-                                font.family: monitorManager.monoFont
-                                font.pixelSize: 9; text: name
+                                font.family: Theme.fontFamily
+                                font.pixelSize: Theme.fontSizeSmall; text: name
                             }
 
                             MouseArea {
@@ -135,12 +160,56 @@ PanelWindow {
                     }
                 }
 
+                // Controls
                 RowLayout {
                     Layout.fillWidth: true; spacing: 10
                     ComboBox {
+                        id: rotCombo
                         Layout.fillWidth: true
                         model: ["normal", "90", "180", "270", "flipped", "flipped-90", "flipped-180", "flipped-270"]
-                        font.family: monitorManager.monoFont
+                        font.family: Theme.fontFamily
+                        
+                        // Custom styling for ComboBox
+                        contentItem: Text {
+                            leftPadding: 10
+                            text: rotCombo.displayText
+                            font: rotCombo.font
+                            color: Theme.amber
+                            verticalAlignment: Text.AlignVCenter
+                        }
+                        background: Rectangle {
+                            color: Theme.bgDark
+                            border.color: Theme.amber
+                            border.width: Theme.borderWidth
+                        }
+                        popup: Popup {
+                            y: rotCombo.height
+                            width: rotCombo.width
+                            implicitHeight: contentItem.implicitHeight
+                            padding: 1
+                            contentItem: ListView {
+                                clip: true
+                                implicitHeight: contentHeight
+                                model: rotCombo.popup.visible ? rotCombo.delegateModel : null
+                                ScrollIndicator.vertical: ScrollIndicator { }
+                            }
+                            background: Rectangle {
+                                color: Theme.bgDark
+                                border.color: Theme.amber
+                            }
+                        }
+                        delegate: ItemDelegate {
+                            width: rotCombo.width
+                            contentItem: Text {
+                                text: modelData
+                                color: highlighted ? Theme.bgDark : Theme.amber
+                                font: rotCombo.font
+                            }
+                            background: Rectangle {
+                                color: highlighted ? Theme.amber : "transparent"
+                            }
+                        }
+
                         onActivated: (idx) => {
                             for(let i=0; i<monModel.count; i++) {
                                 if(monModel.get(i).name === activeMon) {
@@ -150,31 +219,32 @@ PanelWindow {
                             }
                         }
                     }
-                    Button { 
+
+                    ThemedButton { 
                         text: "STITCH"
-                        font.family: monitorManager.monoFont
                         onClicked: autoStitchLogic() 
                     }
                 }
 
-                Button { 
+                ThemedButton { 
                     text: "APPLY & PERSIST"
-                    Layout.fillWidth: true; highlighted: hasChanges
-                    font.family: monitorManager.monoFont
+                    Layout.fillWidth: true
+                    highlighted: hasChanges
                     onClicked: applyTopology() 
                 }
 
+                // Resolution List
                 Rectangle {
-                    Layout.fillWidth: true; Layout.fillHeight: true; color: "#050505"; border.color: "#222"
+                    Layout.fillWidth: true; Layout.fillHeight: true; color: Theme.bgDark; border.color: Theme.panelBorder
                     ScrollView {
                         anchors.fill: parent; clip: true
                         Column {
                             width: parent.width
                             Repeater {
                                 model: (activeMon !== "" && rawResData[activeMon]) ? rawResData[activeMon] : []
-                                Button {
-                                    width: parent.width; text: modelData; font.pixelSize: 9
-                                    font.family: monitorManager.monoFont
+                                ThemedButton {
+                                    width: parent.width
+                                    text: modelData
                                     onClicked: {
                                         let res = modelData.split(/[\s,]+/)[0].replace("px", "");
                                         for(let i=0; i<monModel.count; i++) {
@@ -195,31 +265,25 @@ PanelWindow {
         }
     }
 
-    function autoStitchLogic() {
-        if (monModel.count < 2) return;
-        let anchorIdx = 0; let minX = monModel.get(0).x;
-        for(let i=1; i<monModel.count; i++) {
-            if(monModel.get(i).x < minX) { minX = monModel.get(i).x; anchorIdx = i; }
+    // Logic remains functional
+    function autoStitchLogic() { 
+        let currentX = 0;
+        for (let i = 0; i < monModel.count; i++) {
+            monModel.setProperty(i, "x", currentX);
+            monModel.setProperty(i, "y", 0);
+            currentX += getLogicalWidth(i);
         }
-        let secondaryIdx = (anchorIdx === 0) ? 1 : 0;
-        let anchorWidth = getLogicalWidth(anchorIdx);
-        monModel.setProperty(secondaryIdx, "x", monModel.get(anchorIdx).x + anchorWidth);
-        monModel.setProperty(secondaryIdx, "y", monModel.get(anchorIdx).y);
         hasChanges = true;
     }
 
     function getLogicalWidth(idx) {
-        if (idx < 0 || idx >= monModel.count) return 0;
         let m = monModel.get(idx);
-        let isPortrait = (m.rotationType.includes("90") || m.rotationType.includes("270"));
-        return isPortrait ? m.h : m.w;
+        return (m.rotationType.includes("90") || m.rotationType.includes("270")) ? m.h : m.w;
     }
-
+    
     function getLogicalHeight(idx) {
-        if (idx < 0 || idx >= monModel.count) return 0;
         let m = monModel.get(idx);
-        let isPortrait = (m.rotationType.includes("90") || m.rotationType.includes("270"));
-        return isPortrait ? m.w : m.h;
+        return (m.rotationType.includes("90") || m.rotationType.includes("270")) ? m.w : m.h;
     }
 
     function applyTopology() {
@@ -233,7 +297,7 @@ PanelWindow {
         }
         executor.command = ["/usr/bin/sh", "-c", "/usr/bin/wlr-randr " + randrCmds.join(" ")];
         executor.running = true;
-        let saveFileCmd = `echo -e "# Autogenerated by MonitorManager\n${hyprLines.join('\n')}" > ~/.config/hypr/monitors.conf`;
+        let saveFileCmd = `echo -e "# Autogenerated\n${hyprLines.join('\n')}" > ~/.config/hypr/monitors.conf`;
         saver.command = ["/usr/bin/sh", "-c", saveFileCmd];
         saver.running = true;
     }
@@ -260,9 +324,6 @@ PanelWindow {
         }
     }
     Process { id: executor; onExited: (code) => { if(code === 0) hasChanges = false; } }
-    Process { 
-        id: saver 
-        onExited: (code) => { if (code === 0) console.log("Hyprland config updated."); }
-    }
+    Process { id: saver; onExited: (code) => { if (code === 0) console.log("Hyprland config updated."); } }
     Component.onCompleted: scanner.running = true;
 }

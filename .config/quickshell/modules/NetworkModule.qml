@@ -10,21 +10,24 @@ PanelWindow {
     screen: targetScreen
     WlrLayershell.layer: WlrLayershell.Bottom
     anchors { bottom: true; left: true }
-    implicitWidth: 450; implicitHeight: 220; color: "transparent"
+    
+    implicitWidth: 450
+    implicitHeight: 220
+    color: "transparent"
 
     Item {
         anchors { fill: parent; margins: 40 }
         
         // --- DECORATIVE BRACKETS ---
-        // Safeguard color access with root ? root.amber : "transparent"
+        // Using Theme.amber and Theme.borderWidth
         Rectangle { 
-            width: 2; height: 100; 
-            color: root ? root.amber : "transparent"; 
+            width: Theme.borderWidth + 1; height: 100 
+            color: Theme.amber 
             anchors { left: parent.left; bottom: parent.bottom } 
         }
         Rectangle { 
-            width: 100; height: 2; 
-            color: root ? root.amber : "transparent"; 
+            width: 100; height: Theme.borderWidth + 1 
+            color: Theme.amber 
             anchors { left: parent.left; bottom: parent.bottom } 
         }
         
@@ -33,44 +36,81 @@ PanelWindow {
             spacing: 8
             
             Text { 
-                text: "LINK: " + (root ? root.activeIface.toUpperCase() : "SEARCHING...")
-                font.family: "Monospace"; font.pixelSize: 10
-                color: root ? root.amber : "grey"; opacity: 0.5 
+                text: "LINK_ESTABLISHED: " + (root ? root.activeIface.toUpperCase() : "SEARCHING...")
+                font.family: Theme.fontFamily
+                font.pixelSize: Theme.fontSizeSmall
+                color: Theme.amber
+                opacity: Theme.inactiveOpacity 
             }
             
             Column {
-                spacing: 2
+                spacing: 4
+                
+                // Downlink (RX)
                 Row {
-                    spacing: 10
-                    Text { text: "RX >"; font.family: "Monospace"; font.pixelSize: 16; color: root ? root.amber : "grey"; width: 40 }
+                    spacing: 12
+                    Text { 
+                        text: "RX >"
+                        font.family: Theme.fontFamily
+                        font.pixelSize: Theme.fontSizeLarge
+                        color: Theme.amber
+                        width: 45 
+                    }
                     Text { 
                         text: (root ? root.netDown : "0.0") + " KB/s"
-                        font.family: "Monospace"; font.pixelSize: 16; color: root ? root.amber : "grey"; font.bold: true 
+                        font.family: Theme.fontFamily
+                        font.pixelSize: Theme.fontSizeLarge
+                        color: Theme.amber
+                        font.bold: true 
                     }
                 }
+                
+                // Uplink (TX)
                 Row {
-                    spacing: 10
-                    Text { text: "TX >"; font.family: "Monospace"; font.pixelSize: 12; color: root ? root.amber : "grey"; width: 40; opacity: 0.7 }
+                    spacing: 12
+                    Text { 
+                        text: "TX >"
+                        font.family: Theme.fontFamily
+                        font.pixelSize: Theme.fontSizeMed
+                        color: Theme.amber
+                        width: 45
+                        opacity: 0.7 
+                    }
                     Text { 
                         text: (root ? root.netUp : "0.0") + " KB/s"
-                        font.family: "Monospace"; font.pixelSize: 12; color: root ? root.amber : "grey"; opacity: 0.7 
+                        font.family: Theme.fontFamily
+                        font.pixelSize: Theme.fontSizeMed
+                        color: Theme.amber
+                        opacity: 0.7 
                     }
                 }
             }
             
-            // --- ACTIVITY BAR ---
+            // --- DYNAMIC ACTIVITY BAR ---
             Rectangle {
-                width: 120; height: 2; color: root ? Qt.rgba(root.amber.r, root.amber.g, root.amber.b, 0.1) : "transparent"
+                width: 150; height: 2
+                color: Theme.glassLight
+                
                 Rectangle {
+                    id: activityFill
                     height: parent.height
-                    // Safeguard parseFloat and math logic
-                    width: root ? Math.min(parent.width, parseFloat(root.netDown) / 10) : 0
-                    color: root ? root.amber : "transparent"
+                    // Scale width based on activity (capped at 1000 KB/s for scaling)
+                    width: root ? Math.min(parent.width, (parseFloat(root.netDown) / 1000) * parent.width) : 0
+                    color: Theme.amber
                     
-                    // Simple flicker effect logic
-                    opacity: root ? (0.4 + (Math.random() * 0.6)) : 0
+                    // The Flicker Effect
+                    opacity: 0.6
+                    SequentialAnimation on opacity {
+                        running: parseFloat(root ? root.netDown : 0) > 0.1
+                        loops: Animation.Infinite
+                        NumberAnimation { to: 1.0; duration: 50 }
+                        NumberAnimation { to: 0.6; duration: 150 }
+                        PauseAnimation { duration: 50 }
+                    }
                     
-                    Behavior on width { NumberAnimation { duration: 500 } }
+                    Behavior on width { 
+                        NumberAnimation { duration: Theme.animSpeed; easing.type: Theme.defaultEasing } 
+                    }
                 }
             }
         }

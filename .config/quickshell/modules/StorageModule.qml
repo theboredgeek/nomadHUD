@@ -14,37 +14,33 @@ PanelWindow {
     screen: targetScreen
     WlrLayershell.layer: WlrLayershell.Bottom
     WlrLayershell.namespace: "storage_module"
-    WlrLayershell.keyboardFocus: WlrLayershell.None
     
     anchors { bottom: true; right: true }
     
     implicitWidth: storageMainBox.width
     implicitHeight: storageMainBox.height
 
-    // Theme integration from shell.qml
-    property color accent: root.amber
-    property string monoFont: root.fontFamily
-
     Binding {
         target: storageWindow.WlrLayershell
         property: "margins.bottom"
-        value: anchorTarget ? Math.floor(anchorTarget.WlrLayershell.margins.bottom + anchorTarget.implicitHeight + 15) : 20
+        value: anchorTarget ? Math.floor(anchorTarget.WlrLayershell.margins.bottom + anchorTarget.implicitHeight + Theme.moduleSpacing) : 20
     }
     WlrLayershell.margins.right: 20
 
     Rectangle {
         id: storageMainBox
         width: 300
-        height: Math.max(storageList.contentHeight + 20, 60)
-        color: root.glass
-        border.color: "#333"
-        border.width: 1
+        height: Math.max(storageList.contentHeight + (Theme.panelPadding * 2), 60)
+        color: Theme.glass
+        border.color: Theme.panelBorder
+        border.width: Theme.borderWidth
+        radius: Theme.cornerRadius
 
         ListView {
             id: storageList
             anchors.fill: parent
-            anchors.margins: 10
-            spacing: 12
+            anchors.margins: Theme.panelPadding
+            spacing: Theme.moduleSpacing
             interactive: false 
             model: ListModel { id: storageModel }
 
@@ -53,9 +49,9 @@ PanelWindow {
                 
                 Rectangle {
                     anchors.fill: parent
-                    color: "transparent"
-                    border.width: 1
-                    border.color: (driveHover.containsMouse || mounted) ? storageWindow.accent : "#333"
+                    color: driveHover.containsMouse ? Theme.hoverTint : "transparent"
+                    border.width: Theme.borderWidth
+                    border.color: (driveHover.containsMouse || mounted) ? Theme.amber : Theme.panelBorder
 
                     MouseArea {
                         id: driveHover
@@ -66,12 +62,12 @@ PanelWindow {
 
                     ColumnLayout {
                         anchors.fill: parent
-                        anchors.margins: 10
+                        anchors.margins: Theme.panelPadding
                         spacing: 6
 
                         RowLayout {
                             Layout.fillWidth: true
-                            spacing: 10
+                            spacing: Theme.panelPadding
 
                             ColumnLayout {
                                 Layout.fillWidth: true
@@ -79,19 +75,18 @@ PanelWindow {
 
                                 Text { 
                                     Layout.fillWidth: true
-                                    // NEW: Logic for "NAME // LABEL"
                                     text: model.name.toUpperCase() + " // " + model.label.toUpperCase()
-                                    font.family: storageWindow.monoFont
-                                    font.pixelSize: 10; 
-                                    color: (driveHover.containsMouse || mounted) ? storageWindow.accent : "#888" 
+                                    font.family: Theme.fontFamily
+                                    font.pixelSize: Theme.fontSizeMed
+                                    color: (driveHover.containsMouse || mounted) ? Theme.amber : Theme.textSecondary 
                                     elide: Text.ElideRight
                                 }
                                 Text { 
                                     Layout.fillWidth: true
-                                    text: "SIZE: " + (model.size || "--") + " | " + (mounted ? "MOUNTED" : "UNMOUNTED")
-                                    font.family: storageWindow.monoFont
-                                    font.pixelSize: 9; 
-                                    color: driveHover.containsMouse ? "#aaa" : "#555" 
+                                    text: "SIZE: " + (model.size || "--") + " | " + (mounted ? "ACTIVE" : "OFFLINE")
+                                    font.family: Theme.fontFamily
+                                    font.pixelSize: Theme.fontSizeSmall
+                                    color: driveHover.containsMouse ? Theme.textSecondary : Theme.inactive 
                                     elide: Text.ElideRight
                                 }
                             }
@@ -100,19 +95,21 @@ PanelWindow {
                                 id: buttonRow
                                 spacing: 8
                                 
+                                // MOUNT / UNMOUNT BUTTON
                                 Rectangle {
-                                    width: 56; height: 24
-                                    color: mntMouse.containsMouse ? storageWindow.accent : "#1a1a1a"
-                                    border.color: storageWindow.accent
-                                    border.width: 1
+                                    width: Theme.btnWidth; height: Theme.btnHeight
+                                    color: Theme.getBtnBg(mntMouse.containsMouse)
+                                    border.color: Theme.getBtnBorder(mntMouse.containsMouse)
+                                    border.width: Theme.borderWidth
+                                    radius: Theme.cornerRadius
                                     
                                     Text {
                                         anchors.centerIn: parent
                                         text: mounted ? "UMNT" : "MNT"
-                                        font.family: storageWindow.monoFont
-                                        font.pixelSize: 10
+                                        font.family: Theme.fontFamily
+                                        font.pixelSize: Theme.fontSizeMed
                                         font.bold: true
-                                        color: mntMouse.containsMouse ? "black" : storageWindow.accent
+                                        color: Theme.getBtnText(mntMouse.containsMouse)
                                     }
 
                                     MouseArea {
@@ -128,20 +125,22 @@ PanelWindow {
                                     }
                                 }
 
+                                // VIEW BUTTON
                                 Rectangle {
-                                    width: 56; height: 24
+                                    width: Theme.btnWidth; height: Theme.btnHeight
                                     visible: mounted && model.path !== ""
-                                    color: viewMouse.containsMouse ? storageWindow.accent : "#1a1a1a"
-                                    border.color: storageWindow.accent
-                                    border.width: 1
+                                    color: Theme.getBtnBg(viewMouse.containsMouse)
+                                    border.color: Theme.getBtnBorder(viewMouse.containsMouse)
+                                    border.width: Theme.borderWidth
+                                    radius: Theme.cornerRadius
                                     
                                     Text {
                                         anchors.centerIn: parent
                                         text: "VIEW"
-                                        font.family: storageWindow.monoFont
-                                        font.pixelSize: 10
+                                        font.family: Theme.fontFamily
+                                        font.pixelSize: Theme.fontSizeMed
                                         font.bold: true
-                                        color: viewMouse.containsMouse ? "black" : storageWindow.accent
+                                        color: Theme.getBtnText(viewMouse.containsMouse)
                                     }
 
                                     MouseArea {
@@ -166,26 +165,31 @@ PanelWindow {
                                 Layout.fillWidth: true
                                 Text {
                                     text: model.avail + " FREE"
-                                    font.family: storageWindow.monoFont
-                                    font.pixelSize: 9; color: "#666"
+                                    font.family: Theme.fontFamily
+                                    font.pixelSize: Theme.fontSizeSmall
+                                    color: Theme.textDim
                                 }
                                 Item { Layout.fillWidth: true }
                                 Text {
                                     text: model.usePerc
-                                    font.family: storageWindow.monoFont
-                                    font.pixelSize: 9; color: storageWindow.accent
+                                    font.family: Theme.fontFamily
+                                    font.pixelSize: Theme.fontSizeSmall
+                                    color: Theme.getStorageColor(model.usePerc)
                                 }
                             }
 
                             Rectangle {
                                 Layout.fillWidth: true
-                                height: 4
-                                color: "#222"
+                                height: Theme.barHeight
+                                color: Theme.glassLight
                                 Rectangle {
                                     width: parent.width * (Math.min(100, parseInt(model.usePerc.replace('%',''))) / 100)
                                     height: parent.height
-                                    color: storageWindow.accent
-                                    opacity: 0.8
+                                    color: Theme.getStorageColor(model.usePerc)
+                                    
+                                    Behavior on width { 
+                                        NumberAnimation { duration: Theme.animSpeed; easing.type: Theme.defaultEasing } 
+                                    }
                                 }
                             }
                         }
@@ -197,7 +201,6 @@ PanelWindow {
 
     Process { id: actionProc; onExited: lsblkProc.running = true }
     Process { id: openProc }
-    
     Process {
         id: lsblkProc
         command: ["lsblk", "-J", "-o", "NAME,SIZE,MOUNTPOINTS,FSTYPE,LABEL,FSAVAIL,FSUSE%"]
@@ -215,7 +218,6 @@ PanelWindow {
                     const processDev = (d) => {
                         let mnt = "";
                         if (Array.isArray(d.mountpoints)) { mnt = d.mountpoints.find(p => p !== null) || ""; }
-                        
                         if (d.fstype && d.fstype !== "swap" && !d.name.includes("loop")) {
                             storageModel.append({
                                 name: d.name, 

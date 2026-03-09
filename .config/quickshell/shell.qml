@@ -9,16 +9,7 @@ import QtQuick.Controls.Fusion
 ShellRoot {
     id: mainShell
     
-    // --- 1. THE MASTER THEME CONTROL ---
-    // Modules will access these via root.amber, root.glass, etc.
-    readonly property var config: mainShell
-    readonly property color amber: "#e1a82c"
-    readonly property color warningRed: "#ff3333"
-    readonly property color glass: "#e6000000"
-    readonly property color circuitBlue: "#004466"
-    readonly property string fontFamily: "Monospace"
-
-    // --- 2. GLOBAL DATA STATE ---
+    readonly property var config: mainShell 
     property var gpuData: [] 
     property string cpuLoad: "00"
     property string memLoad: "00"
@@ -31,12 +22,7 @@ ShellRoot {
     property real u_time: 0.0
     Timer { interval: 16; running: true; repeat: true; onTriggered: mainShell.u_time += 0.01 }
 
-    // --- 3. MASTER LOGIC HELPERS ---
-    function getAlertColor(load) {
-        return parseInt(load) >= 90 ? warningRed : amber
-    }
-
-    // --- 4. DATA COLLECTION PROCESSES ---
+    // --- DATA COLLECTION ---
     Process {
         id: cpuProc
         command: ["/bin/sh", "-c", "top -bn1 | grep 'Cpu(s)' | awk '{print $2 + $4}'"] 
@@ -95,7 +81,6 @@ ShellRoot {
         }
     }
 
-    // --- 5. DISPLAY LAYER ---
     Variants {
         model: Quickshell.screens
         delegate: Component {
@@ -113,37 +98,38 @@ ShellRoot {
 
                     Rectangle {
                         anchors.fill: parent
-                        color: "#080808"
+                        color: Theme.bgDark
                         
                         Rectangle {
                             anchors.fill: parent
                             opacity: 0.15 + (Math.sin(mainShell.u_time) * 0.05)
                             gradient: Gradient {
-                                GradientStop { position: 0.0; color: mainShell.circuitBlue }
-                                GradientStop { position: 1.0; color: "#002206" }
+                                GradientStop { position: 0.0; color: Theme.circuitBlue }
+                                GradientStop { position: 1.0; color: "#001111" } 
                             }
                         }
                         
                         Repeater {
-                            model: 8
+                            model: 12
                             Rectangle {
-                                width: parent.width; height: 1; color: mainShell.amber; opacity: 0.15 
-                                y: (parent.height * (index / 8) + (mainShell.u_time * 60)) % parent.height
+                                width: parent.width; height: Theme.borderWidth; 
+                                color: Theme.amber; 
+                                opacity: 0.1
+                                y: (parent.height * (index / 12) + (mainShell.u_time * 80)) % parent.height
                             }
                         }
                     }
                 }
 
-                // --- UI MODULES (ORDERED BOTTOM-TO-TOP) ---
-                // Passing 'root' ensures modules can access theme colors and data
-                CpuModule      { targetScreen: screenScope.targetScreen; root: mainShell.config }
-                NetworkModule  { targetScreen: screenScope.targetScreen; root: mainShell.config }
-                MemoryModule   { id: localMem; targetScreen: screenScope.targetScreen; root: mainShell.config }
-                GpuModule      { id: localGpu; targetScreen: screenScope.targetScreen; root: mainShell.config; anchorTarget: localMem }
-                ClockModule    { targetScreen: screenScope.targetScreen; root: mainShell.config }
-                MonitorManager { targetScreen: screenScope.targetScreen; root: mainShell.config }
-                SystemTray     { targetScreen: screenScope.targetScreen; root: mainShell.config }
-                StorageModule  { id: localStorage; targetScreen: screenScope.targetScreen; root: mainShell.config; anchorTarget: localGpu }
+                // --- UI MODULES ---
+                CpuModule      { targetScreen: screenScope.targetScreen; root: mainShell }
+                NetworkModule  { targetScreen: screenScope.targetScreen; root: mainShell }
+                MemoryModule   { id: localMem; targetScreen: screenScope.targetScreen; root: mainShell }
+                GpuModule      { id: localGpu; targetScreen: screenScope.targetScreen; root: mainShell; anchorTarget: localMem }
+                ClockModule    { targetScreen: screenScope.targetScreen; root: mainShell }
+                MonitorManager { targetScreen: screenScope.targetScreen; root: mainShell }
+                SystemTray     { targetScreen: screenScope.targetScreen; root: mainShell }
+                StorageModule  { id: localStorage; targetScreen: screenScope.targetScreen; root: mainShell; anchorTarget: localGpu }
             }
         }
     }
