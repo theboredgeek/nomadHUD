@@ -140,10 +140,10 @@ ShellRoot {
                 NetworkModule  { targetScreen: screenScope.targetScreen; root: mainShell.config }
                 MemoryModule   { id: localMem; targetScreen: screenScope.targetScreen; root: mainShell.config }
                 GpuModule      { id: localGpu; targetScreen: screenScope.targetScreen; root: mainShell.config; anchorTarget: localMem }
-                StorageModule  { id: localStorage; targetScreen: screenScope.targetScreen; root: mainShell.config; anchorTarget: localGpu }
                 ClockModule    { targetScreen: screenScope.targetScreen; root: mainShell.config }
                 MonitorManager { targetScreen: screenScope.targetScreen; root: mainShell.config }
                 SystemTray     { targetScreen: screenScope.targetScreen; root: mainShell.config }
+                StorageModule  { id: localStorage; targetScreen: screenScope.targetScreen; root: mainShell.config; anchorTarget: localGpu }
             }
         }
     }
