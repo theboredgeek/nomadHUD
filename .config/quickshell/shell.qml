@@ -13,8 +13,8 @@ ShellRoot {
     // Modules will access these via root.amber, root.glass, etc.
     readonly property var config: mainShell
     readonly property color amber: "#e1a82c"
-    readonly property color warningRed: "#FF3333"
-    readonly property color glass: "#E6000000"
+    readonly property color warningRed: "#ff3333"
+    readonly property color glass: "#e6000000"
     readonly property color circuitBlue: "#004466"
     readonly property string fontFamily: "Monospace"
 
@@ -120,7 +120,7 @@ ShellRoot {
                             opacity: 0.15 + (Math.sin(mainShell.u_time) * 0.05)
                             gradient: Gradient {
                                 GradientStop { position: 0.0; color: mainShell.circuitBlue }
-                                GradientStop { position: 1.0; color: "#001122" }
+                                GradientStop { position: 1.0; color: "#002206" }
                             }
                         }
                         

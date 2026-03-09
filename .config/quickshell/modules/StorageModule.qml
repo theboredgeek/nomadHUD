@@ -21,6 +21,7 @@ PanelWindow {
     implicitWidth: storageMainBox.width
     implicitHeight: storageMainBox.height
 
+    // Theme integration from shell.qml
     property color accent: root.amber
     property string monoFont: root.fontFamily
 
@@ -48,7 +49,7 @@ PanelWindow {
             model: ListModel { id: storageModel }
 
             delegate: Item {
-                width: 280; height: 75 
+                width: 280; height: mounted ? 85 : 50
                 
                 Rectangle {
                     anchors.fill: parent
@@ -64,33 +65,44 @@ PanelWindow {
                     }
 
                     ColumnLayout {
-                        anchors.fill: parent; anchors.margins: 8
-                        spacing: 4
+                        anchors.fill: parent
+                        anchors.margins: 10
+                        spacing: 6
 
                         RowLayout {
                             Layout.fillWidth: true
-                            Column {
+                            spacing: 10
+
+                            ColumnLayout {
                                 Layout.fillWidth: true
+                                spacing: 0
+
                                 Text { 
-                                    text: "STORAGE // " + (model.label ? model.label.toUpperCase() : "DRIVE")
+                                    Layout.fillWidth: true
+                                    // NEW: Logic for "NAME // LABEL"
+                                    text: model.name.toUpperCase() + " // " + model.label.toUpperCase()
                                     font.family: storageWindow.monoFont
-                                    font.pixelSize: 10; color: (driveHover.containsMouse || mounted) ? storageWindow.accent : "#888" 
+                                    font.pixelSize: 10; 
+                                    color: (driveHover.containsMouse || mounted) ? storageWindow.accent : "#888" 
+                                    elide: Text.ElideRight
                                 }
                                 Text { 
-                                    text: (model.name || "dev") + " [" + (model.size || "--") + "]"
+                                    Layout.fillWidth: true
+                                    text: "SIZE: " + (model.size || "--") + " | " + (mounted ? "MOUNTED" : "UNMOUNTED")
                                     font.family: storageWindow.monoFont
-                                    font.pixelSize: 9; color: driveHover.containsMouse ? "#aaa" : "#555" 
+                                    font.pixelSize: 9; 
+                                    color: driveHover.containsMouse ? "#aaa" : "#555" 
+                                    elide: Text.ElideRight
                                 }
                             }
 
-                            // --- CUSTOM THEMED BUTTONS ---
                             Row {
-                                spacing: 6
+                                id: buttonRow
+                                spacing: 8
                                 
-                                // Mount/Unmount Button
                                 Rectangle {
-                                    width: 48; height: 20
-                                    color: mntMouse.containsMouse ? storageWindow.accent : "transparent"
+                                    width: 56; height: 24
+                                    color: mntMouse.containsMouse ? storageWindow.accent : "#1a1a1a"
                                     border.color: storageWindow.accent
                                     border.width: 1
                                     
@@ -98,7 +110,7 @@ PanelWindow {
                                         anchors.centerIn: parent
                                         text: mounted ? "UMNT" : "MNT"
                                         font.family: storageWindow.monoFont
-                                        font.pixelSize: 8
+                                        font.pixelSize: 10
                                         font.bold: true
                                         color: mntMouse.containsMouse ? "black" : storageWindow.accent
                                     }
@@ -116,11 +128,10 @@ PanelWindow {
                                     }
                                 }
 
-                                // View Button
                                 Rectangle {
-                                    width: 48; height: 20
+                                    width: 56; height: 24
                                     visible: mounted && model.path !== ""
-                                    color: viewMouse.containsMouse ? storageWindow.accent : "transparent"
+                                    color: viewMouse.containsMouse ? storageWindow.accent : "#1a1a1a"
                                     border.color: storageWindow.accent
                                     border.width: 1
                                     
@@ -128,7 +139,7 @@ PanelWindow {
                                         anchors.centerIn: parent
                                         text: "VIEW"
                                         font.family: storageWindow.monoFont
-                                        font.pixelSize: 8
+                                        font.pixelSize: 10
                                         font.bold: true
                                         color: viewMouse.containsMouse ? "black" : storageWindow.accent
                                     }
@@ -146,24 +157,23 @@ PanelWindow {
                             }
                         }
 
-                        // CAPACITY BAR SECTION
                         ColumnLayout {
                             Layout.fillWidth: true
                             visible: mounted
-                            spacing: 2
+                            spacing: 3
 
                             RowLayout {
                                 Layout.fillWidth: true
                                 Text {
                                     text: model.avail + " FREE"
                                     font.family: storageWindow.monoFont
-                                    font.pixelSize: 8; color: "#666"
+                                    font.pixelSize: 9; color: "#666"
                                 }
                                 Item { Layout.fillWidth: true }
                                 Text {
                                     text: model.usePerc
                                     font.family: storageWindow.monoFont
-                                    font.pixelSize: 8; color: storageWindow.accent
+                                    font.pixelSize: 9; color: storageWindow.accent
                                 }
                             }
 
@@ -205,10 +215,11 @@ PanelWindow {
                     const processDev = (d) => {
                         let mnt = "";
                         if (Array.isArray(d.mountpoints)) { mnt = d.mountpoints.find(p => p !== null) || ""; }
+                        
                         if (d.fstype && d.fstype !== "swap" && !d.name.includes("loop")) {
                             storageModel.append({
                                 name: d.name, 
-                                label: d.label || d.name,
+                                label: d.label || "LOCAL DISK", 
                                 size: d.size, 
                                 mounted: mnt !== "", 
                                 path: mnt,
