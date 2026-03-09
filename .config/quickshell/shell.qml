@@ -12,6 +12,7 @@ ShellRoot {
     readonly property var config: mainShell 
     property var gpuData: [] 
     property string cpuLoad: "00"
+    property var cpuCores: [] 
     property string memLoad: "00"
     property string memUsedGB: "0.0"
     property string memTotalGB: "0.0"
@@ -19,14 +20,26 @@ ShellRoot {
     property string netUp: "0.0"
     property string activeIface: "..."
     
+    
     property real u_time: 0.0
     Timer { interval: 16; running: true; repeat: true; onTriggered: mainShell.u_time += 0.01 }
 
     // --- DATA COLLECTION ---
     Process {
         id: cpuProc
-        command: ["/bin/sh", "-c", "top -bn1 | grep 'Cpu(s)' | awk '{print $2 + $4}'"] 
-        stdout: SplitParser { onRead: data => { mainShell.cpuLoad = Math.round(parseFloat(data)).toString().padStart(2, '0'); cpuProc.running = false } }
+        // Reads /proc/stat, sleeps briefly, reads again, then awk calculates the delta usage per core
+        command: ["/bin/sh", "-c", "grep '^cpu' /proc/stat > /tmp/stat1; sleep 0.1; grep '^cpu' /proc/stat > /tmp/stat2; awk 'NR==FNR {u[NR]=$2+$3+$4; t[NR]=$2+$3+$4+$5+$6+$7+$8; next} {u2=$2+$3+$4; t2=$2+$3+$4+$5+$6+$7+$8; diff_u=u2-u[FNR]; diff_t=t2-t[FNR]; printf \"%d|\", (diff_t==0 ? 0 : (diff_u/diff_t)*100)}' /tmp/stat1 /tmp/stat2"] 
+        
+        stdout: SplitParser {
+            onRead: data => {
+                let parts = data.split('|').filter(x => x.length > 0);
+                if (parts.length > 0) {
+                    mainShell.cpuLoad = parts[0].padStart(2, '0'); // Total CPU
+                    mainShell.cpuCores = parts.slice(1);           // Individual Cores
+                }
+                cpuProc.running = false
+            }
+        }
     }
 
     Process {
