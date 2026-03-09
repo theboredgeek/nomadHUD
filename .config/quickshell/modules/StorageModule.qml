@@ -21,8 +21,6 @@ PanelWindow {
     implicitWidth: storageMainBox.width
     implicitHeight: storageMainBox.height
 
-    // --- THEME LINKING ---
-    // Now pulling directly from shell.qml global properties
     property color accent: root.amber
     property string monoFont: root.fontFamily
 
@@ -84,19 +82,32 @@ PanelWindow {
                                     font.pixelSize: 9; color: driveHover.containsMouse ? "#aaa" : "#555" 
                                 }
                             }
-                            Button {
-                                width: 45; height: 24
-                                text: mounted ? "UMNT" : "MNT"
-                                onClicked: {
-                                    actionProc.command = mounted 
-                                        ? ["udisksctl", "unmount", "-b", "/dev/" + model.name] 
-                                        : ["udisksctl", "mount", "-b", "/dev/" + model.name];
-                                    actionProc.running = true;
+
+                            // ACTION BUTTONS
+                            Row {
+                                spacing: 4
+                                Button {
+                                    width: 42; height: 24
+                                    text: mounted ? "UMNT" : "MNT"
+                                    onClicked: {
+                                        actionProc.command = mounted 
+                                            ? ["udisksctl", "unmount", "-b", "/dev/" + model.name] 
+                                            : ["udisksctl", "mount", "-b", "/dev/" + model.name];
+                                        actionProc.running = true;
+                                    }
+                                }
+                                Button {
+                                    width: 42; height: 24
+                                    text: "VIEW"
+                                    visible: mounted && model.path !== ""
+                                    onClicked: {
+                                        openProc.command = ["xdg-open", model.path];
+                                        openProc.running = true;
+                                    }
                                 }
                             }
                         }
 
-                        // CAPACITY BAR SECTION
                         ColumnLayout {
                             Layout.fillWidth: true
                             visible: mounted
@@ -122,7 +133,6 @@ PanelWindow {
                                 height: 4
                                 color: "#222"
                                 Rectangle {
-                                    // Robust percentage parsing
                                     width: parent.width * (Math.min(100, parseInt(model.usePerc.replace('%',''))) / 100)
                                     height: parent.height
                                     color: storageWindow.accent
@@ -137,6 +147,7 @@ PanelWindow {
     }
 
     Process { id: actionProc; onExited: lsblkProc.running = true }
+    Process { id: openProc } // New process for opening the file manager
     
     Process {
         id: lsblkProc
@@ -155,7 +166,6 @@ PanelWindow {
                     const processDev = (d) => {
                         let mnt = "";
                         if (Array.isArray(d.mountpoints)) { mnt = d.mountpoints.find(p => p !== null) || ""; }
-                        // Filter out non-storage partitions like swap or loops
                         if (d.fstype && d.fstype !== "swap" && !d.name.includes("loop")) {
                             storageModel.append({
                                 name: d.name, 
