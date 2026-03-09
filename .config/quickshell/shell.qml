@@ -20,22 +20,21 @@ ShellRoot {
     property string netUp: "0.0"
     property string activeIface: "..."
     
-    
     property real u_time: 0.0
-    Timer { interval: 16; running: true; repeat: true; onTriggered: mainShell.u_time += 0.01 }
+    // Animation Timer: Set running to false to disable background movement and pulsing
+    Timer { interval: 16; running: false; repeat: true; onTriggered: mainShell.u_time += 0.01 }
 
     // --- DATA COLLECTION ---
     Process {
         id: cpuProc
-        // Reads /proc/stat, sleeps briefly, reads again, then awk calculates the delta usage per core
         command: ["/bin/sh", "-c", "grep '^cpu' /proc/stat > /tmp/stat1; sleep 0.1; grep '^cpu' /proc/stat > /tmp/stat2; awk 'NR==FNR {u[NR]=$2+$3+$4; t[NR]=$2+$3+$4+$5+$6+$7+$8; next} {u2=$2+$3+$4; t2=$2+$3+$4+$5+$6+$7+$8; diff_u=u2-u[FNR]; diff_t=t2-t[FNR]; printf \"%d|\", (diff_t==0 ? 0 : (diff_u/diff_t)*100)}' /tmp/stat1 /tmp/stat2"] 
         
         stdout: SplitParser {
             onRead: data => {
                 let parts = data.split('|').filter(x => x.length > 0);
                 if (parts.length > 0) {
-                    mainShell.cpuLoad = parts[0].padStart(2, '0'); // Total CPU
-                    mainShell.cpuCores = parts.slice(1);           // Individual Cores
+                    mainShell.cpuLoad = parts[0].padStart(2, '0'); 
+                    mainShell.cpuCores = parts.slice(1);           
                 }
                 cpuProc.running = false
             }
@@ -113,22 +112,24 @@ ShellRoot {
                         anchors.fill: parent
                         color: Theme.bgDark
                         
+                        // Static Gradient Background
                         Rectangle {
                             anchors.fill: parent
-                            opacity: 0.15 + (Math.sin(mainShell.u_time) * 0.05)
+                            opacity: 0.15 // Removed pulsing math
                             gradient: Gradient {
                                 GradientStop { position: 0.0; color: Theme.circuitBlue }
                                 GradientStop { position: 1.0; color: "#001111" } 
                             }
                         }
                         
+                        // Static Grid/Scanlines (Removed Y-offset animation)
                         Repeater {
                             model: 12
                             Rectangle {
                                 width: parent.width; height: Theme.borderWidth; 
                                 color: Theme.amber; 
                                 opacity: 0.1
-                                y: (parent.height * (index / 12) + (mainShell.u_time * 80)) % parent.height
+                                y: parent.height * (index / 12) 
                             }
                         }
                     }
