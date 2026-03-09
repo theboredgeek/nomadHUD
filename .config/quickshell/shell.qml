@@ -12,7 +12,7 @@ ShellRoot {
     // --- 1. THE MASTER THEME CONTROL ---
     // Modules will access these via root.amber, root.glass, etc.
     readonly property var config: mainShell
-    readonly property color amber: "#2c4de1"
+    readonly property color amber: "#e1a82c"
     readonly property color warningRed: "#FF3333"
     readonly property color glass: "#E6000000"
     readonly property color circuitBlue: "#004466"
