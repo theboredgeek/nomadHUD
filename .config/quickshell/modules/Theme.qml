@@ -42,8 +42,8 @@ QtObject {
     // --- 7. TYPOGRAPHY SETTINGS ---
     readonly property string fontFamily: "Monospace"
     readonly property int fontSizeTiny: 8
-    readonly property int fontSizeSmall: 9
-    readonly property int fontSizeMed: 10
+    readonly property int fontSizeSmall: 10
+    readonly property int fontSizeMed: 12
     readonly property int fontSizeLarge: 14
     readonly property real fontLetterSpacing: 0.5
     
@@ -66,8 +66,8 @@ QtObject {
     }
 
     // --- 10. BUTTON STYLES ---
-    readonly property int btnWidth: 56
-    readonly property int btnHeight: 24
+    readonly property int btnWidth: 52
+    readonly property int btnHeight: 20
     
     function getBtnBg(isHovered) { return isHovered ? amber : bgDark; }
     function getBtnText(isHovered) { return isHovered ? bgDark : amber; }
