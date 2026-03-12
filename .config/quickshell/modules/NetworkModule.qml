@@ -11,23 +11,45 @@ PanelWindow {
     WlrLayershell.layer: WlrLayershell.Bottom
     anchors { bottom: true; left: true }
     
-    implicitWidth: 450
-    implicitHeight: 220
+    implicitWidth: 360
+    implicitHeight: 180
     color: "transparent"
+
+    // --- DYNAMIC THEMING ---
+    // Now explicitly checking for the "OFFLINE" string from our new shell script
+    readonly property bool isDisconnected: !root || 
+                                           root.activeIface === "..." || 
+                                           root.activeIface === "" || 
+                                           root.activeIface === "OFFLINE"
+
+    readonly property color statusColor: isDisconnected ? Theme.alert : Theme.amber
 
     Item {
         anchors { fill: parent; margins: 40 }
         
+        // --- EMERGENCY PULSE ---
+        Rectangle {
+            anchors.fill: parent
+            color: Theme.alert
+            opacity: 0
+            visible: isDisconnected
+            
+            SequentialAnimation on opacity {
+                running: isDisconnected; loops: Animation.Infinite
+                NumberAnimation { to: 0.15; duration: 800; easing.type: Easing.InOutQuad }
+                NumberAnimation { to: 0; duration: 800; easing.type: Easing.InOutQuad }
+            }
+        }
+
         // --- DECORATIVE BRACKETS ---
-        // Using Theme.amber and Theme.borderWidth
         Rectangle { 
             width: Theme.borderWidth + 1; height: 100 
-            color: Theme.amber 
+            color: statusColor 
             anchors { left: parent.left; bottom: parent.bottom } 
         }
         Rectangle { 
             width: 100; height: Theme.borderWidth + 1 
-            color: Theme.amber 
+            color: statusColor 
             anchors { left: parent.left; bottom: parent.bottom } 
         }
         
@@ -36,11 +58,11 @@ PanelWindow {
             spacing: 8
             
             Text { 
-                text: "LINK_ESTABLISHED: " + (root ? root.activeIface.toUpperCase() : "SEARCHING...")
+                text: isDisconnected ? "LINK_STATUS // SIGNAL_LOST" : "LINK_ESTABLISHED // " + root.activeIface.toUpperCase()
                 font.family: Theme.fontFamily
                 font.pixelSize: Theme.fontSizeSmall
-                color: Theme.amber
-                opacity: Theme.inactiveOpacity 
+                color: statusColor
+                opacity: isDisconnected ? 1.0 : Theme.inactiveOpacity 
             }
             
             Column {
@@ -51,17 +73,14 @@ PanelWindow {
                     spacing: 12
                     Text { 
                         text: "RX >"
-                        font.family: Theme.fontFamily
-                        font.pixelSize: Theme.fontSizeLarge
-                        color: Theme.amber
+                        font.family: Theme.fontFamily; font.pixelSize: Theme.fontSizeLarge
+                        color: statusColor
                         width: 45 
                     }
                     Text { 
-                        text: (root ? root.netDown : "0.0") + " KB/s"
-                        font.family: Theme.fontFamily
-                        font.pixelSize: Theme.fontSizeLarge
-                        color: Theme.amber
-                        font.bold: true 
+                        text: (isDisconnected ? "0.0" : root.netDown) + " KB/s"
+                        font.family: Theme.fontFamily; font.pixelSize: Theme.fontSizeLarge
+                        color: statusColor; font.bold: true 
                     }
                 }
                 
@@ -70,18 +89,14 @@ PanelWindow {
                     spacing: 12
                     Text { 
                         text: "TX >"
-                        font.family: Theme.fontFamily
-                        font.pixelSize: Theme.fontSizeMed
-                        color: Theme.amber
-                        width: 45
-                        opacity: 0.7 
+                        font.family: Theme.fontFamily; font.pixelSize: Theme.fontSizeMed
+                        color: statusColor
+                        width: 45; opacity: 0.7 
                     }
                     Text { 
-                        text: (root ? root.netUp : "0.0") + " KB/s"
-                        font.family: Theme.fontFamily
-                        font.pixelSize: Theme.fontSizeMed
-                        color: Theme.amber
-                        opacity: 0.7 
+                        text: (isDisconnected ? "0.0" : root.netUp) + " KB/s"
+                        font.family: Theme.fontFamily; font.pixelSize: Theme.fontSizeMed
+                        color: statusColor; opacity: 0.7 
                     }
                 }
             }
@@ -94,14 +109,12 @@ PanelWindow {
                 Rectangle {
                     id: activityFill
                     height: parent.height
-                    // Scale width based on activity (capped at 1000 KB/s for scaling)
-                    width: root ? Math.min(parent.width, (parseFloat(root.netDown) / 1000) * parent.width) : 0
-                    color: Theme.amber
+                    width: isDisconnected ? 0 : Math.min(parent.width, (parseFloat(root.netDown) / 1000) * parent.width)
+                    color: statusColor
                     
-                    // The Flicker Effect
                     opacity: 0.6
                     SequentialAnimation on opacity {
-                        running: parseFloat(root ? root.netDown : 0) > 0.1
+                        running: !isDisconnected && parseFloat(root.netDown) > 0.1
                         loops: Animation.Infinite
                         NumberAnimation { to: 1.0; duration: 50 }
                         NumberAnimation { to: 0.6; duration: 150 }

@@ -133,11 +133,26 @@ ShellRoot {
 
     Process {
         id: netProc
-        command: ["/bin/sh", "-c", "IFACE=$(ip route | grep default | awk '{print $5}' | head -n1); [ -z \"$IFACE\" ] && IFACE=$(awk 'NR>2 {print $1; exit}' /proc/net/dev | tr -d ':'); R1=$(cat /proc/net/dev | grep \"$IFACE\" | awk '{print $2\"|\"$10}'); sleep 1; R2=$(cat /proc/net/dev | grep \"$IFACE\" | awk '{print $2\"|\"$10}'); echo \"$R1|$R2|$IFACE\" | awk -F'|' '{printf \"%.1f|%.1f|%s\", ($3-$1)/1024, ($4-$2)/1024, $5}'"]
+        // Logic: Check for default route. If none, explicitly set IFACE to OFFLINE.
+        command: ["/bin/sh", "-c", "
+            IFACE=$(ip route | grep default | awk '{print $5}' | head -n1);
+            if [ -z \"$IFACE\" ]; then
+                echo \"0.0|0.0|OFFLINE\"
+            else
+                R1=$(cat /proc/net/dev | grep \"$IFACE\" | awk '{print $2\"|\"$10}');
+                sleep 1;
+                R2=$(cat /proc/net/dev | grep \"$IFACE\" | awk '{print $2\"|\"$10}');
+                echo \"$R1|$R2|$IFACE\" | awk -F'|' '{printf \"%.1f|%.1f|%s\", ($3-$1)/1024, ($4-$2)/1024, $5}'
+            fi
+        "]
         stdout: SplitParser {
             onRead: data => {
                 let parts = data.trim().split('|')
-                if (parts.length === 3) { mainShell.netDown = parts[0]; mainShell.netUp = parts[1]; mainShell.activeIface = parts[2] }
+                if (parts.length === 3) { 
+                    mainShell.netDown = parts[0]; 
+                    mainShell.netUp = parts[1]; 
+                    mainShell.activeIface = parts[2] 
+                }
                 netProc.running = false
             }
         }
