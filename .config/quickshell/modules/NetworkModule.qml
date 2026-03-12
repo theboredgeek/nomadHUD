@@ -15,8 +15,6 @@ PanelWindow {
     implicitHeight: 180
     color: "transparent"
 
-    // --- DYNAMIC THEMING ---
-    // Now explicitly checking for the "OFFLINE" string from our new shell script
     readonly property bool isDisconnected: !root || 
                                            root.activeIface === "..." || 
                                            root.activeIface === "" || 
@@ -57,6 +55,7 @@ PanelWindow {
             anchors { left: parent.left; bottom: parent.bottom; margins: 15 }
             spacing: 8
             
+            // --- HEADER: Status ---
             Text { 
                 text: isDisconnected ? "LINK_STATUS // SIGNAL_LOST" : "LINK_ESTABLISHED // " + root.activeIface.toUpperCase()
                 font.family: Theme.fontFamily
@@ -111,8 +110,8 @@ PanelWindow {
                     height: parent.height
                     width: isDisconnected ? 0 : Math.min(parent.width, (parseFloat(root.netDown) / 1000) * parent.width)
                     color: statusColor
-                    
                     opacity: 0.6
+                    
                     SequentialAnimation on opacity {
                         running: !isDisconnected && parseFloat(root.netDown) > 0.1
                         loops: Animation.Infinite

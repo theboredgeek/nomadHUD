@@ -19,7 +19,7 @@ ShellRoot {
     property string netDown: "0.0"
     property string netUp: "0.0"
     property string activeIface: "..."
-    
+
     // Battery & Power Properties
     property string batPercent: "0"
     property bool isPlugged: false
@@ -27,8 +27,8 @@ ShellRoot {
     property string activeProfile: "..."
     property string batTime: "0h 0m"
     property real smoothedWattage: 0.0
-    property real smoothedEnergy: 0.0 // New: smooths the energy capacity too
-    property int timeUpdateCounter: 0 // New: internal counter
+    property real smoothedEnergy: 0.0 
+    property int timeUpdateCounter: 0 
 
     property real u_time: 0.0
     Timer { interval: 16; running: true; repeat: true; onTriggered: mainShell.u_time += 0.01 }
@@ -42,11 +42,8 @@ ShellRoot {
             CAP=$(cat /sys/class/power_supply/BAT0/capacity 2>/dev/null || echo 0);
             STAT=$(cat /sys/class/power_supply/AC/online 2>/dev/null || echo 0);
             POW=$(cat /sys/class/power_supply/BAT0/power_now 2>/dev/null || echo 0);
-            # Get remaining energy (microwatt-hours)
             ENG=$(cat /sys/class/power_supply/BAT0/energy_now 2>/dev/null || cat /sys/class/power_supply/BAT0/charge_now 2>/dev/null || echo 0);
             PROF=$(powerprofilesctl get 2>/dev/null || echo 'unknown');
-            
-            # We output all raw values and do the math in JS for better smoothing
             echo \"$CAP|$STAT|$POW|$PROF|$ENG\"
         "]
         stdout: SplitParser {
@@ -60,10 +57,8 @@ ShellRoot {
                     let rawMicrowatts = parseFloat(parts[2]);
                     let rawEnergy = parseFloat(parts[4]);
 
-                    // 1. Calculate Instant Wattage
                     let currentWattage = rawMicrowatts / 1000000;
                     
-                    // 2. Heavy Smoothing (Alpha 0.05 for extreme stability)
                     if (mainShell.smoothedWattage === 0) {
                         mainShell.smoothedWattage = currentWattage;
                         mainShell.smoothedEnergy = rawEnergy;
@@ -74,8 +69,6 @@ ShellRoot {
                     
                     mainShell.powerDrain = mainShell.smoothedWattage.toFixed(1);
 
-                    // 3. Lazy Time Update Logic
-                    // Increment counter every 2s. Update string every 30s (15 cycles).
                     mainShell.timeUpdateCounter++;
                     
                     if (mainShell.isPlugged) {
@@ -86,13 +79,12 @@ ShellRoot {
                             let hoursRemaining = (mainShell.smoothedEnergy / 1000000) / mainShell.smoothedWattage;
                             let h = Math.floor(hoursRemaining);
                             let m = Math.round((hoursRemaining - h) * 60);
-                            
                             if (h > 99) h = 99; 
                             mainShell.batTime = h + "h " + m + "m";
                         } else {
                             mainShell.batTime = "CALC...";
                         }
-                        mainShell.timeUpdateCounter = 0; // Reset
+                        mainShell.timeUpdateCounter = 0; 
                     }
                 }
                 powerDataProc.running = false;
@@ -133,7 +125,6 @@ ShellRoot {
 
     Process {
         id: netProc
-        // Logic: Check for default route. If none, explicitly set IFACE to OFFLINE.
         command: ["/bin/sh", "-c", "
             IFACE=$(ip route | grep default | awk '{print $5}' | head -n1);
             if [ -z \"$IFACE\" ]; then
@@ -151,7 +142,7 @@ ShellRoot {
                 if (parts.length === 3) { 
                     mainShell.netDown = parts[0]; 
                     mainShell.netUp = parts[1]; 
-                    mainShell.activeIface = parts[2] 
+                    mainShell.activeIface = parts[2];
                 }
                 netProc.running = false
             }
