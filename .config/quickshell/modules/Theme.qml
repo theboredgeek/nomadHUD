@@ -3,7 +3,7 @@ import QtQuick
 
 QtObject {
     // --- 1. CORE BRANDING ---
-    readonly property color amber: "#44e12c"
+    readonly property color amber: "#e1c62c"
     readonly property color circuitBlue: "#004466"
     readonly property color cyberGrape: "#582fba"
     readonly property color matrixGreen: "#00FF41"
