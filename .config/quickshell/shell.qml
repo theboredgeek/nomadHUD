@@ -182,38 +182,6 @@ ShellRoot {
                 required property var modelData
                 readonly property var targetScreen: modelData
 
-                PanelWindow {
-                    id: backgroundWindow
-                    screen: targetScreen
-                    WlrLayershell.layer: WlrLayershell.Background
-                    implicitWidth: screen.width
-                    implicitHeight: screen.height
-
-                    Rectangle {
-                        anchors.fill: parent
-                        color: Theme.bgDark
-                        
-                        Rectangle {
-                            anchors.fill: parent
-                            opacity: 0.15 + (Math.sin(mainShell.u_time) * 0.05)
-                            gradient: Gradient {
-                                GradientStop { position: 0.0; color: Theme.circuitBlue }
-                                GradientStop { position: 1.0; color: "#001111" } 
-                            }
-                        }
-                        
-                        Repeater {
-                            model: 12
-                            Rectangle {
-                                width: parent.width; height: Theme.borderWidth; 
-                                color: Theme.amber; 
-                                opacity: 0.1
-                                y: (parent.height * (index / 12) + (mainShell.u_time * 80)) % parent.height
-                            }
-                        }
-                    }
-                }
-
                 // --- UI MODULES ---
                 CpuModule      { targetScreen: screenScope.targetScreen; root: mainShell }
                 NetworkModule  { targetScreen: screenScope.targetScreen; root: mainShell }
